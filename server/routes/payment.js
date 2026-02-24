@@ -1,6 +1,19 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { getUserByEmail, updateUser, createPayment, getPaymentsByUserId, getPromoCode, usePromoCode } from '../config/database.js';
+import { 
+  getUserByEmail, 
+  updateUser, 
+  createPayment, 
+  getPaymentsByUserId, 
+  getPromoCode, 
+  usePromoCode,
+  checkPromoCodeUsage,
+  recordPromoCodeUsage,
+  getReferralByCode,
+  createReferral,
+  createReferralCommission,
+  updateReferredBy
+} from '../config/database.js';
 import authMiddleware from '../middleware/auth.js';
 import { createMyanMyanPayPayment, verifyMyanMyanPayPayment } from '../services/myanpay.js';
 
@@ -61,6 +74,22 @@ router.post('/validate-promo', authMiddleware, async (req, res) => {
   }
 
   try {
+    const user = await getUserByEmail(req.user.email);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if user already used this promo code
+    const existingUsage = await checkPromoCodeUsage(user.user_id, code);
+    if (existingUsage) {
+      return res.status(400).json({ error: 'You have already used this promo code' });
+    }
+
+    // Check if user is already paid
+    if (user.is_paid) {
+      return res.status(400).json({ error: 'Premium members cannot use promo codes' });
+    }
+
     const promo = await getPromoCode(code);
     if (!promo) {
       return res.status(400).json({ error: 'Invalid or expired promo code' });
@@ -72,6 +101,7 @@ router.post('/validate-promo', authMiddleware, async (req, res) => {
     } else {
       finalPrice = calculateFinalPrice(null);
     }
+
     res.json({
       success: true,
       message: 'Promo code is valid!',
@@ -91,7 +121,7 @@ router.post('/validate-promo', authMiddleware, async (req, res) => {
  */
 router.post('/checkout', authMiddleware, async (req, res) => {
   try {
-    const { promoCode, paymentMethod } = req.body;
+    const { promoCode, paymentMethod, referralCode } = req.body;
     const user = await getUserByEmail(req.user.email);
 
     if (!user) {
@@ -104,15 +134,36 @@ router.post('/checkout', authMiddleware, async (req, res) => {
 
     let finalPrice = PRICING.basePrice;
     const code = promoCode ? promoCode.trim().toUpperCase() : null;
+    let discountAmount = 0;
 
+    // Handle promo code
     if (code) {
+      // Check if user already used this promo code
+      const existingUsage = await checkPromoCodeUsage(user.user_id, code);
+      if (existingUsage) {
+        return res.status(400).json({ error: 'You have already used this promo code' });
+      }
+
       const promo = await getPromoCode(code);
       if (!promo) {
         return res.status(400).json({ error: 'Invalid or expired promo code' });
       }
+      
+      const originalPrice = finalPrice;
       finalPrice = calculateFinalPrice(code, promo.discount_percent);
-    } else {
-      finalPrice = calculateFinalPrice(null);
+      discountAmount = originalPrice - finalPrice;
+    }
+
+    // Handle referral code
+    let referralId = null;
+    if (referralCode && !user.referred_by) {
+      const referral = await getReferralByCode(referralCode.trim().toUpperCase());
+      if (referral && referral.user_id !== user.user_id) {
+        // Create referral relationship
+        referralId = await createReferral(referral.user_id, user.user_id, referralCode.trim().toUpperCase());
+        await updateReferredBy(user.user_id, referralCode.trim().toUpperCase());
+        await useReferralCode(referralCode.trim().toUpperCase());
+      }
     }
 
     const orderId = `SF-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -137,6 +188,7 @@ router.post('/checkout', authMiddleware, async (req, res) => {
           amount: finalPrice,
           currency: PRICING.currency,
           promoCode: code,
+          referralId: referralId,
           paymentMethod,
           provider: 'myanpay',
           providerPaymentId: myanpayResponse.paymentId,
@@ -146,6 +198,11 @@ router.post('/checkout', authMiddleware, async (req, res) => {
         };
 
         await createPayment(payment);
+
+        // Record promo code usage if applicable
+        if (code) {
+          await recordPromoCodeUsage(user.user_id, code, discountAmount, orderId);
+        }
 
         res.json({
           success: true,
@@ -177,6 +234,7 @@ router.post('/checkout', authMiddleware, async (req, res) => {
         amount: finalPrice,
         currency: PRICING.currency,
         promoCode: code,
+        referralId: referralId,
         paymentMethod,
         provider: 'international',
         status: 'completed', // Mock success for now
@@ -185,15 +243,27 @@ router.post('/checkout', authMiddleware, async (req, res) => {
 
       await createPayment(payment);
 
+      // Record promo code usage if applicable
+      if (code) {
+        await recordPromoCodeUsage(user.user_id, code, discountAmount, orderId);
+      }
+
+      // Use promo code
       if (code) {
         await usePromoCode(code);
       }
 
+      // Update user to premium
       await updateUser(user.email, {
         isPaid: true,
         promoCodeUsed: code,
         paidAt: new Date().toISOString(),
       });
+
+      // Create referral commission if applicable
+      if (referralId) {
+        await createReferralCommission(referralId, finalPrice);
+      }
 
       res.json({
         success: true,
@@ -350,11 +420,21 @@ router.post('/webhook/myanpay', async (req, res) => {
       const payment = payments.find(p => p.order_id === orderId);
       
       if (payment && payment.status !== 'completed') {
-        // Update payment status
+        // Update user to premium
         await updateUser(payment.email, {
           isPaid: true,
           paidAt: new Date().toISOString(),
         });
+        
+        // Use promo code if applicable
+        if (payment.promo_code) {
+          await usePromoCode(payment.promo_code);
+        }
+        
+        // Create referral commission if applicable
+        if (payment.referral_id) {
+          await createReferralCommission(payment.referral_id, payment.amount);
+        }
         
         // TODO: Update payment record to completed status
         console.log(`Payment completed for order: ${orderId}`);

@@ -19,6 +19,7 @@ import {
   Lock,
   Wallet,
   QrCode,
+  Users,
 } from 'lucide-react'
 
 const FEATURES = [
@@ -98,6 +99,9 @@ export default function PaymentPage() {
   const [promoApplied, setPromoApplied] = useState(false)
   const [promoError, setPromoError] = useState('')
   const [promoDiscount, setPromoDiscount] = useState(0)
+  const [referralCode, setReferralCode] = useState('')
+  const [referralApplied, setReferralApplied] = useState(false)
+  const [referralError, setReferralError] = useState('')
   const [selectedMethod, setSelectedMethod] = useState('kbzpay')
   const [loading, setLoading] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
@@ -164,6 +168,7 @@ export default function PaymentPage() {
       const res = await paymentAPI.checkout({
         promoCode: promoApplied ? promoCode : null,
         paymentMethod: selectedMethod,
+        referralCode: referralCode.trim() || null,
       })
       
       if (res.data.success) {
@@ -444,9 +449,38 @@ export default function PaymentPage() {
           {promoApplied && (
             <p className="text-xs text-green-600 mt-2 font-medium flex items-center gap-1">
               <CheckCircle2 size={12} />
-              Extra {promoDiscount}% discount applied!
+              Promo code applied! You saved {promoDiscount}% off
             </p>
           )}
+        </div>
+
+        {/* Referral Code */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4 animate-fade-in-delay">
+          <h3 className="font-bold text-gray-800 mb-3 text-sm flex items-center gap-2">
+            <Users className="w-4 h-4 text-gray-400" />
+            Referral Code
+            <span className="text-[10px] font-normal text-gray-300 ml-1">(optional)</span>
+          </h3>
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={referralCode}
+                onChange={(e) => {
+                  setReferralCode(e.target.value.toUpperCase())
+                  setReferralError('')
+                }}
+                placeholder="Enter referral code"
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm font-medium"
+              />
+            </div>
+          </div>
+          {referralError && (
+            <p className="text-xs text-red-500 mt-2 font-medium">{referralError}</p>
+          )}
+          <p className="text-xs text-gray-500 mt-2">
+            Enter a referral code to support your friend. They'll earn 20% commission!
+          </p>
         </div>
 
         {/* Order Summary */}

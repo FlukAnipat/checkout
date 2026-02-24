@@ -245,6 +245,88 @@ export async function usePromoCode(code) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// 🎯 REFERRAL SYSTEM OPERATIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function createReferral(referrerId, referredId, referralCode) {
+  const sql = `
+    INSERT INTO referrals (referrer_id, referred_id, referral_code, commission_percent)
+    VALUES (?, ?, ?, 20.00)
+  `;
+  await pool.execute(sql, [referrerId, referredId, referralCode]);
+}
+
+export async function getReferralByCode(code) {
+  const [rows] = await pool.execute(
+    'SELECT * FROM referral_codes WHERE code = ? AND is_active = 1',
+    [code.toUpperCase().trim()]
+  );
+  return rows[0] || null;
+}
+
+export async function useReferralCode(code) {
+  const [result] = await pool.execute(
+    'UPDATE referral_codes SET used_count = used_count + 1 WHERE code = ?',
+    [code.toUpperCase().trim()]
+  );
+  return result.affectedRows > 0;
+}
+
+export async function createReferralCommission(referralId, amount) {
+  const commissionAmount = amount * 0.20; // 20% commission
+  const sql = `
+    UPDATE referrals 
+    SET commission_amount = ?, status = 'completed', completed_at = NOW()
+    WHERE id = ?
+  `;
+  await pool.execute(sql, [commissionAmount, referralId]);
+}
+
+export async function getReferralsByUserId(userId) {
+  const [rows] = await pool.execute(
+    'SELECT * FROM referrals WHERE referrer_id = ? ORDER BY created_at DESC',
+    [userId]
+  );
+  return rows;
+}
+
+export async function checkPromoCodeUsage(userId, promoCode) {
+  const [rows] = await pool.execute(
+    'SELECT * FROM promo_code_usage WHERE user_id = ? AND promo_code = ?',
+    [userId, promoCode.toUpperCase().trim()]
+  );
+  return rows[0] || null;
+}
+
+export async function recordPromoCodeUsage(userId, promoCode, discountAmount, orderId) {
+  const sql = `
+    INSERT INTO promo_code_usage (promo_code, user_id, discount_amount, order_id)
+    VALUES (?, ?, ?, ?)
+  `;
+  await pool.execute(sql, [promoCode.toUpperCase().trim(), userId, discountAmount, orderId]);
+}
+
+export async function updateReferralCode(userId, referralCode) {
+  const [result] = await pool.execute(
+    'UPDATE users SET referral_code = ? WHERE user_id = ?',
+    [referralCode.toUpperCase().trim(), userId]
+  );
+  return result.affectedRows > 0;
+}
+
+export async function updateReferredBy(userId, referralCode) {
+  const referral = await getReferralByCode(referralCode);
+  if (referral) {
+    const [result] = await pool.execute(
+      'UPDATE users SET referred_by = ? WHERE user_id = ?',
+      [referral.user_id, userId]
+    );
+    return result.affectedRows > 0;
+  }
+  return false;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // 📚 VOCABULARY OPERATIONS
 // ═══════════════════════════════════════════════════════════════════════════
 
