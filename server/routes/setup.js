@@ -25,13 +25,13 @@ router.get('/', async (req, res) => {
     const conn = await pool.getConnection();
     console.log('Setup: Connected!');
 
-    // Read SQL file
-    const sqlPath = path.join(__dirname, '..', 'setup.sql');
+    // Read and execute full SQL
+    const sqlPath = path.join(__dirname, '..', 'setup-full.sql');
     const sql = fs.readFileSync(sqlPath, 'utf8');
-
-    console.log('Setup: Executing SQL...');
+    
+    console.log('Setup: Creating schema and inserting data...');
     await conn.query(sql);
-    console.log('Setup: SQL executed!');
+    console.log('Setup: Database setup completed!');
 
     // Verify tables
     const [tables] = await conn.query('SHOW TABLES');
