@@ -52,8 +52,7 @@ if (railwayUrl && railwayUrl.includes('mysql://')) {
     database: process.env.DB_NAME || 'shwe_flash_db',
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0,
-    ssl: { rejectUnauthorized: false }
+    queueLimit: 0
   });
 }
 
