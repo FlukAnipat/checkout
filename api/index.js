@@ -14,6 +14,7 @@ import authRoutes from '../server/routes/auth.js';
 import paymentRoutes from '../server/routes/payment.js';
 import vocabRoutes from '../server/routes/vocabulary.js';
 import setupRoutes from '../server/routes/setup.js';
+import flutterAuthRoutes from '../server/routes/flutter-auth.js';
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/vocab', vocabRoutes);
 app.use('/api/setup', setupRoutes);
+app.use('/api/auth', flutterAuthRoutes); // Flutter-specific auth endpoints
 
 // ── Health check ──
 app.get('/api/health', (req, res) => {
