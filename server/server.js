@@ -44,6 +44,15 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// ── Simple test endpoint ──
+app.get('/api/test/simple', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Simple test endpoint working',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // ── Serve React build in production ──
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '..', 'dist')));
