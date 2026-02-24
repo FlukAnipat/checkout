@@ -1,6 +1,6 @@
 /**
  * Database Configuration
- * MySQL via XAMPP for local development
+ * PostgreSQL for Railway deployment
  */
 
 import { Pool } from 'pg';
@@ -47,11 +47,11 @@ export async function getUserByEmail(email) {
 }
 
 export async function getUserById(userId) {
-  const [rows] = await pool.execute(
-    'SELECT * FROM users WHERE user_id = ?',
+  const result = await pool.query(
+    'SELECT * FROM users WHERE user_id = $1',
     [userId]
   );
-  return rows[0] || null;
+  return result.rows[0] || null;
 }
 
 export async function createUser(userData) {
@@ -59,7 +59,7 @@ export async function createUser(userData) {
     INSERT INTO users (
       user_id, email, password, first_name, last_name,
       phone, country_code, is_paid, promo_code_used, paid_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
   `;
   const params = [
     userData.userId,
@@ -73,13 +73,14 @@ export async function createUser(userData) {
     userData.promoCodeUsed || null,
     userData.paidAt || null
   ];
-  await pool.execute(sql, params);
+  await pool.query(sql, params);
   return userData;
 }
 
 export async function updateUser(email, updates) {
   const fields = [];
   const params = [];
+  let paramIndex = 1;
 
   const fieldMap = {
     firstName: 'first_name',
@@ -93,22 +94,22 @@ export async function updateUser(email, updates) {
 
   Object.entries(updates).forEach(([key, value]) => {
     const col = fieldMap[key] || key;
+    fields.push(`${col} = $${paramIndex}`);
     if (key === 'isPaid') {
-      fields.push(`${col} = ?`);
       params.push(value ? 1 : 0);
     } else {
-      fields.push(`${col} = ?`);
       params.push(value);
     }
+    paramIndex++;
   });
 
   if (fields.length === 0) return null;
 
   params.push(email.toLowerCase().trim());
-  const sql = `UPDATE users SET ${fields.join(', ')} WHERE email = ?`;
-  const [result] = await pool.execute(sql, params);
+  const sql = `UPDATE users SET ${fields.join(', ')} WHERE email = $${paramIndex}`;
+  const result = await pool.query(sql, params);
 
-  if (result.affectedRows === 0) return null;
+  if (result.rowCount === 0) return null;
   return await getUserByEmail(email);
 }
 
@@ -121,7 +122,7 @@ export async function createPayment(paymentData) {
     INSERT INTO payments (
       payment_id, user_id, amount, currency, payment_method,
       promo_code, status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
   `;
   const params = [
     paymentData.paymentId,
@@ -132,16 +133,16 @@ export async function createPayment(paymentData) {
     paymentData.promoCode || null,
     paymentData.status || 'completed'
   ];
-  await pool.execute(sql, params);
+  await pool.query(sql, params);
   return paymentData;
 }
 
 export async function getPaymentsByUserId(userId) {
-  const [rows] = await pool.execute(
-    'SELECT * FROM payments WHERE user_id = ? ORDER BY created_at DESC',
+  const result = await pool.query(
+    'SELECT * FROM payments WHERE user_id = $1 ORDER BY created_at DESC',
     [userId]
   );
-  return rows;
+  return result.rows;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -149,22 +150,22 @@ export async function getPaymentsByUserId(userId) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function getPromoCode(code) {
-  const [rows] = await pool.execute(
+  const result = await pool.query(
     `SELECT * FROM promo_codes 
-     WHERE code = ? 
+     WHERE code = $1 
      AND (expires_at IS NULL OR expires_at > NOW())
      AND (max_uses IS NULL OR used_count < max_uses)`,
     [code.toUpperCase().trim()]
   );
-  return rows[0] || null;
+  return result.rows[0] || null;
 }
 
 export async function usePromoCode(code) {
-  const [result] = await pool.execute(
-    'UPDATE promo_codes SET used_count = used_count + 1 WHERE code = ?',
+  const result = await pool.query(
+    'UPDATE promo_codes SET used_count = used_count + 1 WHERE code = $1',
     [code.toUpperCase().trim()]
   );
-  return result.affectedRows > 0;
+  return result.rowCount > 0;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -172,128 +173,130 @@ export async function usePromoCode(code) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function getVocabularyByLevel(hskLevel) {
-  const [rows] = await pool.execute(
-    'SELECT * FROM vocabulary WHERE hsk_level = ? ORDER BY sort_order ASC',
+  const result = await pool.query(
+    'SELECT * FROM vocabulary WHERE hsk_level = $1 ORDER BY sort_order ASC',
     [hskLevel]
   );
-  return rows;
+  return result.rows;
 }
 
 export async function getHskLevelStats() {
-  const [rows] = await pool.execute(
+  const result = await pool.query(
     `SELECT hsk_level, COUNT(*) as word_count 
      FROM vocabulary 
      GROUP BY hsk_level 
      ORDER BY hsk_level ASC`
   );
-  return rows;
+  return result.rows;
 }
 
 export async function getUserProfile(userId) {
-  const [rows] = await pool.execute(
+  const result = await pool.query(
     `SELECT u.*, 
       (SELECT COUNT(*) FROM user_saved_words sw WHERE sw.user_id = u.user_id) AS saved_count,
       (SELECT COUNT(*) FROM user_word_status ws WHERE ws.user_id = u.user_id AND ws.status = 'mastered') AS mastered_count,
       (SELECT COUNT(*) FROM user_word_status ws WHERE ws.user_id = u.user_id AND ws.status = 'skipped') AS skipped_count,
       (SELECT COALESCE(SUM(ls.learned_cards), 0) FROM learning_sessions ls WHERE ls.user_id = u.user_id) AS total_learned
-     FROM users u WHERE u.user_id = ?`,
+     FROM users u WHERE u.user_id = $1`,
     [userId]
   );
-  return rows[0] || null;
+  return result.rows[0] || null;
 }
 
 export async function getUserSavedWords(userId) {
-  const [rows] = await pool.execute(
+  const result = await pool.query(
     `SELECT v.* FROM user_saved_words sw
      JOIN vocabulary v ON sw.vocab_id = v.vocab_id
-     WHERE sw.user_id = ?
+     WHERE sw.user_id = $1
      ORDER BY sw.saved_at DESC`,
     [userId]
   );
-  return rows;
+  return result.rows;
 }
 
 export async function getUserWordStatuses(userId) {
-  const [rows] = await pool.execute(
-    'SELECT vocab_id, status FROM user_word_status WHERE user_id = ?',
+  const result = await pool.query(
+    'SELECT vocab_id, status FROM user_word_status WHERE user_id = $1',
     [userId]
   );
-  return rows;
+  return result.rows;
 }
 
 export async function syncUserSavedWord(userId, vocabId) {
   try {
-    await pool.execute(
-      'INSERT IGNORE INTO user_saved_words (user_id, vocab_id) VALUES (?, ?)',
+    await pool.query(
+      'INSERT INTO user_saved_words (user_id, vocab_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
       [userId, vocabId]
     );
   } catch (err) {
-    console.error('❌ syncUserSavedWord error:', err);
+    console.error('syncUserSavedWord error:', err);
     throw err;
   }
 }
 
 export async function removeUserSavedWord(userId, vocabId) {
-  await pool.execute(
-    'DELETE FROM user_saved_words WHERE user_id = ? AND vocab_id = ?',
+  await pool.query(
+    'DELETE FROM user_saved_words WHERE user_id = $1 AND vocab_id = $2',
     [userId, vocabId]
   );
 }
 
 export async function syncUserWordStatus(userId, vocabId, status) {
   try {
-    await pool.execute(
+    await pool.query(
       `INSERT INTO user_word_status (user_id, vocab_id, status) 
-       VALUES (?, ?, ?)
-       ON DUPLICATE KEY UPDATE status = VALUES(status)`,
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id, vocab_id) DO UPDATE SET status = EXCLUDED.status`,
       [userId, vocabId, status]
     );
   } catch (err) {
-    console.error('❌ syncUserWordStatus error:', err);
+    console.error('syncUserWordStatus error:', err);
     throw err;
   }
 }
 
 export async function syncLearningSession(userId, sessionDate, learnedCards, minutesSpent, hskLevel) {
-  await pool.execute(
+  await pool.query(
     `INSERT INTO learning_sessions (user_id, session_date, learned_cards, minutes_spent, hsk_level)
-     VALUES (?, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE 
-       learned_cards = VALUES(learned_cards),
-       minutes_spent = VALUES(minutes_spent),
-       hsk_level = VALUES(hsk_level)`,
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (user_id, session_date) DO UPDATE SET 
+       learned_cards = EXCLUDED.learned_cards,
+       minutes_spent = EXCLUDED.minutes_spent,
+       hsk_level = EXCLUDED.hsk_level`,
     [userId, sessionDate, learnedCards, minutesSpent, hskLevel]
   );
 }
 
 export async function getUserDailyGoals(userId) {
-  const [rows] = await pool.execute(
-    'SELECT goal_date, target_cards, completed_cards, is_completed FROM daily_goals WHERE user_id = ? ORDER BY goal_date DESC LIMIT 30',
+  const result = await pool.query(
+    'SELECT goal_date, target_cards, completed_cards, is_completed FROM daily_goals WHERE user_id = $1 ORDER BY goal_date DESC LIMIT 30',
     [userId]
   );
-  return rows;
+  return result.rows;
 }
 
 export async function getUserLearningSessions(userId) {
-  const [rows] = await pool.execute(
-    'SELECT session_date, learned_cards, minutes_spent, hsk_level FROM learning_sessions WHERE user_id = ? ORDER BY session_date DESC LIMIT 30',
+  const result = await pool.query(
+    'SELECT session_date, learned_cards, minutes_spent, hsk_level FROM learning_sessions WHERE user_id = $1 ORDER BY session_date DESC LIMIT 30',
     [userId]
   );
-  return rows;
+  return result.rows;
 }
 
 export async function getUserStats(userId) {
   // Get day streak from daily_goals
-  const [goalRows] = await pool.execute(
-    'SELECT goal_date, is_completed FROM daily_goals WHERE user_id = ? ORDER BY goal_date DESC',
+  const goalResult = await pool.query(
+    'SELECT goal_date, is_completed FROM daily_goals WHERE user_id = $1 ORDER BY goal_date DESC',
     [userId]
   );
+  const goalRows = goalResult.rows;
   
   // Get total learned from learning_sessions
-  const [sessionRows] = await pool.execute(
-    'SELECT SUM(learned_cards) as total_learned FROM learning_sessions WHERE user_id = ?',
+  const sessionResult = await pool.query(
+    'SELECT SUM(learned_cards) as total_learned FROM learning_sessions WHERE user_id = $1',
     [userId]
   );
+  const sessionRows = sessionResult.rows;
   
   // Calculate day streak
   let dayStreak = 0;
@@ -326,13 +329,13 @@ export async function getUserStats(userId) {
 }
 
 export async function syncDailyGoal(userId, goalDate, targetCards, completedCards, isCompleted) {
-  await pool.execute(
+  await pool.query(
     `INSERT INTO daily_goals (user_id, goal_date, target_cards, completed_cards, is_completed)
-     VALUES (?, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE 
-       target_cards = VALUES(target_cards),
-       completed_cards = VALUES(completed_cards),
-       is_completed = VALUES(is_completed)`,
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (user_id, goal_date) DO UPDATE SET 
+       target_cards = EXCLUDED.target_cards,
+       completed_cards = EXCLUDED.completed_cards,
+       is_completed = EXCLUDED.is_completed`,
     [userId, goalDate, targetCards, completedCards, isCompleted ? 1 : 0]
   );
 }
@@ -346,28 +349,28 @@ export async function syncDailyGoal(userId, goalDate, targetCards, completedCard
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function getUserSettings(userId) {
-  const [rows] = await pool.execute(
+  const result = await pool.query(
     `SELECT user_id, app_language, current_hsk_level, daily_goal_target, 
             is_shuffle_mode, notification_enabled, reminder_time, updated_at
-     FROM user_settings WHERE user_id = ?`,
+     FROM user_settings WHERE user_id = $1`,
     [userId]
   );
-  return rows.length > 0 ? rows[0] : null;
+  return result.rows.length > 0 ? result.rows[0] : null;
 }
 
 export async function syncUserSettings(userId, settings) {
   const { appLanguage, currentHskLevel, dailyGoalTarget, isShuffleMode, notificationEnabled, reminderTime } = settings;
-  await pool.execute(
+  await pool.query(
     `INSERT INTO user_settings 
      (user_id, app_language, current_hsk_level, daily_goal_target, is_shuffle_mode, notification_enabled, reminder_time)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE 
-       app_language = VALUES(app_language),
-       current_hsk_level = VALUES(current_hsk_level),
-       daily_goal_target = VALUES(daily_goal_target),
-       is_shuffle_mode = VALUES(is_shuffle_mode),
-       notification_enabled = VALUES(notification_enabled),
-       reminder_time = VALUES(reminder_time)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT (user_id) DO UPDATE SET 
+       app_language = EXCLUDED.app_language,
+       current_hsk_level = EXCLUDED.current_hsk_level,
+       daily_goal_target = EXCLUDED.daily_goal_target,
+       is_shuffle_mode = EXCLUDED.is_shuffle_mode,
+       notification_enabled = EXCLUDED.notification_enabled,
+       reminder_time = EXCLUDED.reminder_time`,
     [userId, appLanguage, currentHskLevel, dailyGoalTarget, isShuffleMode ? 1 : 0, notificationEnabled ? 1 : 0, reminderTime]
   );
 }
@@ -377,18 +380,18 @@ export async function syncUserSettings(userId, settings) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function getUserAchievements(userId) {
-  const [rows] = await pool.execute(
+  const result = await pool.query(
     `SELECT achievement_key, unlocked_at 
-     FROM user_achievements WHERE user_id = ? ORDER BY unlocked_at DESC`,
+     FROM user_achievements WHERE user_id = $1 ORDER BY unlocked_at DESC`,
     [userId]
   );
-  return rows;
+  return result.rows;
 }
 
 export async function unlockAchievement(userId, achievementKey) {
-  await pool.execute(
-    `INSERT IGNORE INTO user_achievements (user_id, achievement_key, unlocked_at)
-     VALUES (?, ?, NOW())`,
+  await pool.query(
+    `INSERT INTO user_achievements (user_id, achievement_key, unlocked_at)
+     VALUES ($1, $2, NOW()) ON CONFLICT DO NOTHING`,
     [userId, achievementKey]
   );
 }
