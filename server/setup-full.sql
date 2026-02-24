@@ -182,7 +182,10 @@ INSERT INTO `promo_codes` (`code`, `discount_percent`, `max_uses`, `used_count`,
 
 -- Insert demo user (password: password123)
 INSERT INTO `users` (`user_id`, `email`, `password`, `first_name`, `last_name`, `phone`, `country_code`, `is_paid`, `promo_code_used`, `paid_at`, `created_at`, `updated_at`) VALUES
-('demo-user-001', 'demo@example.com', '$2a$10$B59nw3dGtqMGxK0NdWzEXeUvx1LQoR0u1eiApYzTe3WzFhRA38Ziy', 'Demo', 'User', '123456789', '+66', 0, NULL, NULL, NOW(), NOW());
+('demo-user-001', 'demo@example.com', '$2a$10$B59nw3dGtqMGxK0NdWzEXeUvx1LQoR0u1eiApYzTe3WzFhRA38Ziy', 'Demo', 'User', '123456789', '+66', 0, NULL, NULL, NOW(), NOW()),
+('admin-user-001', 'admin@gmail.com', '$2a$10$RNmtcZRnv0cCqOTY2zdQYeLmzrVmJlDIHy/kzLXN5VoPhPSRIFnwe', 'Admin', 'User', '123456789', '+66', 0, NULL, NULL, NOW(), NOW()),
+('test-user-001', 'test1@gmail.com', '$2a$10$RNmtcZRnv0cCqOTY2zdQYeLmzrVmJlDIHy/kzLXN5VoPhPSRIFnwe', 'Test1', 'User', '123456789', '+66', 0, NULL, NULL, NOW(), NOW()),
+('test-user-002', 'test2@gmail.com', '$2a$10$RNmtcZRnv0cCqOTY2zdQYeLmzrVmJlDIHy/kzLXN5VoPhPSRIFnwe', 'Test2', 'User', '123456789', '+66', 0, NULL, NULL, NOW(), NOW());
 
 -- Insert sample HSK 1 vocabulary (first 20 words)
 INSERT INTO `vocabulary` (`vocab_id`, `hsk_level`, `hanzi`, `pinyin`, `meaning`, `meaning_en`, `meaning_my`, `example`, `audio_asset`, `sort_order`) VALUES
