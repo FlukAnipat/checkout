@@ -3,15 +3,16 @@
 
 ## 🔐 Authentication (สำคัญที่สุด)
 
-### **POST /api/auth/login**
+### **POST /api/auth/flutter/login**
 ```dart
-// Flutter login
+// Flutter login (Flutter-specific endpoint)
 final response = await http.post(
-  Uri.parse('https://your-vercel-domain.com/api/auth/login'),
+  Uri.parse('https://your-vercel-domain.com/api/auth/flutter/login'),
   headers: {'Content-Type': 'application/json'},
   body: jsonEncode({
     'email': 'user@example.com',
-    'password': 'password123'
+    'password': 'password123',
+    'appApiKey': 'shwe_flash_app_key_production_2024'
   }),
 );
 
@@ -19,6 +20,7 @@ final response = await http.post(
 {
   "success": true,
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "user": {
     "userId": "uuid-123",
     "email": "user@example.com",
@@ -30,11 +32,11 @@ final response = await http.post(
 }
 ```
 
-### **POST /api/auth/register**
+### **POST /api/auth/flutter/register**
 ```dart
-// Flutter register
+// Flutter register (Flutter-specific endpoint)
 final response = await http.post(
-  Uri.parse('https://your-vercel-domain.com/api/auth/register'),
+  Uri.parse('https://your-vercel-domain.com/api/auth/flutter/register'),
   headers: {'Content-Type': 'application/json'},
   body: jsonEncode({
     'email': 'newuser@example.com',
@@ -42,20 +44,34 @@ final response = await http.post(
     'firstName': 'John',
     'lastName': 'Doe',
     'phone': '09123456789',
-    'countryCode': '+95'
+    'countryCode': '+95',
+    'appApiKey': 'shwe_flash_app_key_production_2024'
   }),
 );
 ```
 
-### **GET /api/auth/me**
+### **GET /api/auth/flutter/me**
 ```dart
-// Get user profile (with token)
+// Get Flutter user profile (Flutter-specific endpoint)
 final response = await http.get(
-  Uri.parse('https://your-vercel-domain.com/api/auth/me'),
+  Uri.parse('https://your-vercel-domain.com/api/auth/flutter/me'),
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer $token'
+    'Authorization': 'Bearer $token',
+    'X-App-API-Key': 'shwe_flash_app_key_production_2024'
   },
+);
+```
+
+### **POST /api/auth/flutter/refresh**
+```dart
+// Refresh Flutter token
+final response = await http.post(
+  Uri.parse('https://your-vercel-domain.com/api/auth/flutter/refresh'),
+  headers: {'Content-Type': 'application/json'},
+  body: jsonEncode({
+    'refreshToken': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  }),
 );
 ```
 
