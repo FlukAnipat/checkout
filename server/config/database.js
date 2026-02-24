@@ -17,39 +17,111 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 // 🗄️ MySQL CONNECTION POOL (Railway)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '3306'),
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'shwe_flash_db',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  ssl: { rejectUnauthorized: false }
-});
+// Parse Railway MySQL connection string
+const railwayUrl = process.env.DATABASE_URL || 'mysql://root:ERtQWdFODWIAyiGyBsxEcCyDqlImcEJB@shinkansen.proxy.rlwy.net:56119/hsk-shwe-flash-db';
 
-// Test connection on startup
+let pool;
+
+if (railwayUrl.includes('mysql://')) {
+  // Parse Railway connection string
+  const url = new URL(railwayUrl);
+  pool = mysql.createPool({
+    host: url.hostname,
+    port: parseInt(url.port) || 3306,
+    user: url.username,
+    password: url.password,
+    database: url.pathname.substring(1), // Remove leading slash
+    waitForConnections: true,
+    connectionLimit: 5, // Reduce for Railway
+    queueLimit: 0,
+    ssl: { rejectUnauthorized: false },
+    acquireTimeout: 60000, // 60 seconds
+    timeout: 60000, // 60 seconds
+    reconnect: true, // Auto reconnect
+    idleTimeout: 300000, // 5 minutes
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
+  });
+} else {
+  // Fallback to individual environment variables
+  pool = mysql.createPool({
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'shwe_flash_db',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    ssl: { rejectUnauthorized: false }
+  });
+}
+
+// Test connection on startup with retry logic
 (async () => {
-  try {
-    const conn = await pool.getConnection();
-    console.log('✅ Connected to MySQL database');
-    conn.release();
-  } catch (err) {
-    console.error('❌ MySQL connection failed:', err.message);
+  const maxRetries = 5;
+  const retryDelay = 3000; // 3 seconds
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const conn = await pool.getConnection();
+      console.log('✅ Connected to MySQL database (Railway)');
+      conn.release();
+      break;
+    } catch (err) {
+      console.error(`❌ MySQL connection attempt ${attempt}/${maxRetries} failed:`, err.message);
+      
+      if (attempt === maxRetries) {
+        console.error('🚨 All connection attempts failed. Please check:');
+        console.error('   - DATABASE_URL environment variable');
+        console.error('   - Railway service status');
+        console.error('   - Network connectivity');
+        process.exit(1);
+      }
+      
+      console.log(`⏳ Retrying in ${retryDelay/1000} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
   }
 })();
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 👤 USER OPERATIONS
+// � CONNECTION RETRY WRAPPER
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function executeWithRetry(operation, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (err) {
+      if (err.code === 'ETIMEDOUT' || err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
+        console.error(`⚠️ Database operation attempt ${attempt}/${maxRetries} failed:`, err.message);
+        
+        if (attempt === maxRetries) {
+          throw new Error(`Database operation failed after ${maxRetries} attempts: ${err.message}`);
+        }
+        
+        console.log(`⏳ Retrying database operation in 2 seconds...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } else {
+        throw err; // Re-throw non-connection errors
+      }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// �👤 USER OPERATIONS
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function getUserByEmail(email) {
-  const [rows] = await pool.execute(
-    'SELECT * FROM users WHERE email = ?',
-    [email.toLowerCase().trim()]
-  );
-  return rows[0] || null;
+  return await executeWithRetry(async () => {
+    const [rows] = await pool.execute(
+      'SELECT * FROM users WHERE email = ?',
+      [email.toLowerCase().trim()]
+    );
+    return rows[0] || null;
+  });
 }
 
 export async function getUserById(userId) {
