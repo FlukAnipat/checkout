@@ -1,5 +1,5 @@
 import express from 'express';
-import pg from 'pg';
+import mysql from 'mysql2/promise';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -11,23 +11,20 @@ const router = express.Router();
 // GET /api/setup - Create tables and import data (run once)
 router.get('/', async (req, res) => {
   try {
-    const pool = new pg.Pool({
+    const conn = await mysql.createConnection({
       host: process.env.DB_HOST,
-      port: parseInt(process.env.DB_PORT),
+      port: parseInt(process.env.DB_PORT || '3306'),
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      ssl: {
-        rejectUnauthorized: false
-      }
+      ssl: { rejectUnauthorized: false },
+      multipleStatements: true
     });
 
-    console.log('Setup: Connecting to PostgreSQL...');
-    const conn = await pool.connect();
-    console.log('Setup: Connected!');
+    console.log('Setup: Connected to MySQL!');
 
-    // Read and execute PostgreSQL SQL
-    const sqlPath = path.join(__dirname, '..', 'setup-postgres.sql');
+    // Read and execute MySQL SQL
+    const sqlPath = path.join(__dirname, '..', 'setup-full.sql');
     const sql = fs.readFileSync(sqlPath, 'utf8');
     
     console.log('Setup: Creating schema and inserting data...');
@@ -35,18 +32,17 @@ router.get('/', async (req, res) => {
     console.log('Setup: Database setup completed!');
 
     // Verify tables
-    const { rows: tables } = await conn.query('SELECT table_name FROM information_schema.tables WHERE table_schema = \'public\'');
-    const tableNames = tables.map(t => t.table_name);
+    const [tables] = await conn.query('SHOW TABLES');
+    const tableNames = tables.map(t => Object.values(t)[0]);
 
     // Count rows
     const counts = {};
     for (const name of tableNames) {
-      const { rows } = await conn.query(`SELECT COUNT(*) as c FROM "${name}"`);
+      const [rows] = await conn.query(`SELECT COUNT(*) as c FROM \`${name}\``);
       counts[name] = parseInt(rows[0].c);
     }
 
-    conn.release();
-    await pool.end();
+    await conn.end();
 
     res.json({
       success: true,

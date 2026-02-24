@@ -21,6 +21,7 @@ CREATE TABLE `daily_goals` (
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_goal_date` (`user_id`, `goal_date`),
   KEY `idx_user_id` (`user_id`),
   KEY `idx_goal_date` (`goal_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -38,6 +39,7 @@ CREATE TABLE `learning_sessions` (
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_session_date` (`user_id`, `session_date`),
   KEY `idx_user_id` (`user_id`),
   KEY `idx_session_date` (`session_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
