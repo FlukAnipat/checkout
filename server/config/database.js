@@ -17,19 +17,25 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 // 🗄️ PostgreSQL CONNECTION POOL (Supabase)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const pool = new pg.Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'postgres',
-  ssl: {
-    rejectUnauthorized: false,
-    sslmode: 'require'
-  },
-  connectionTimeoutMillis: 10000,
-  idleTimeoutMillis: 30000
-});
+const poolConfig = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+    }
+  : {
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_NAME || 'postgres',
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+    };
+
+const pool = new pg.Pool(poolConfig);
 
 // Test connection on startup
 (async () => {
