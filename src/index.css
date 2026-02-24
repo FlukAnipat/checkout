@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50: #FFF5F5;
+  --color-primary-100: #FFE0E0;
+  --color-primary-200: #FFB8B8;
+  --color-primary-300: #FF8A8A;
+  --color-primary-400: #FF5C5C;
+  --color-primary-500: #D32F2F;
+  --color-primary-600: #C62828;
+  --color-primary-700: #B71C1C;
+  --color-primary-800: #8B0000;
+  --color-primary-900: #5C0000;
+  --color-gold-400: #FFD54F;
+  --color-gold-500: #FFC107;
+  --color-gold-600: #FFB300;
+  --color-kbz-500: #0066CC;
+  --color-wave-500: #FF6600;
+  --color-aya-500: #00A651;
+  --color-cb-500: #003DA5;
+  --color-mpu-500: #006633;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #F7F8FC;
+  min-height: 100vh;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+.gradient-primary {
+  background: linear-gradient(135deg, #D32F2F 0%, #B71C1C 100%);
+}
+
+.gradient-gold {
+  background: linear-gradient(135deg, #FFD54F 0%, #FFB300 100%);
+}
+
+.gradient-hero {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+.payment-option {
+  transition: all 0.2s ease;
+}
+.payment-option:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+.payment-option.selected {
+  border-color: #D32F2F;
+  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.12);
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+.animate-fade-in-delay {
+  animation: fadeIn 0.5s ease-out 0.15s both;
+}
+.animate-fade-in-delay-2 {
+  animation: fadeIn 0.5s ease-out 0.3s both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-check {
+  animation: checkPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+}
+
+@keyframes checkPop {
+  from { opacity: 0; transform: scale(0); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.confetti-bg {
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(255, 213, 79, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(211, 47, 47, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 50% 80%, rgba(76, 175, 80, 0.08) 0%, transparent 50%);
+}

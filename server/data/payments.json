@@ -1,0 +1,13 @@
+[
+  {
+    "paymentId": "deb05dbb-bb32-4d52-965b-71072ff8b498",
+    "userId": "user_1771865514293_8a6vio",
+    "email": "admin@gmail.com",
+    "amount": 16200,
+    "currency": "MMK",
+    "promoCode": "TOM",
+    "paymentMethod": "card",
+    "status": "completed",
+    "createdAt": "2026-02-23T16:53:15.064Z"
+  }
+]
