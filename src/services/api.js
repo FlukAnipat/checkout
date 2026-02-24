@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API_BASE = process.env.NODE_ENV === 'production' 
-  ? 'https://shwe-flash-backend.up.railway.app/api'
+  ? 'https://checkout.up.railway.app/api'
   : '/api';
 
 const api = axios.create({
