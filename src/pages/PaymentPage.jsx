@@ -99,6 +99,7 @@ export default function PaymentPage() {
   const [promoApplied, setPromoApplied] = useState(false)
   const [promoError, setPromoError] = useState('')
   const [promoDiscount, setPromoDiscount] = useState(0)
+  const [promoSalesPerson, setPromoSalesPerson] = useState(null)
   const [salesCode, setSalesCode] = useState('')
   const [salesApplied, setSalesApplied] = useState(false)
   const [salesError, setSalesError] = useState('')
@@ -153,12 +154,14 @@ export default function PaymentPage() {
     setPromoError('')
     setLoading(true)
     try {
-      await paymentAPI.validatePromo(promoCode)
+      const res = await paymentAPI.validatePromo(promoCode)
       setPromoApplied(true)
       setPromoDiscount(pricing?.promoDiscountPercent || 10)
+      setPromoSalesPerson(res.data.salesPerson)
     } catch (err) {
       setPromoError(err.response?.data?.error || 'Invalid promo code')
       setPromoApplied(false)
+      setPromoSalesPerson(null)
     } finally {
       setLoading(false)
     }
@@ -432,6 +435,7 @@ export default function PaymentPage() {
                   setPromoCode(e.target.value.toUpperCase())
                   setPromoError('')
                   if (promoApplied) setPromoApplied(false)
+                  setPromoSalesPerson(null)
                 }}
                 placeholder="Enter code"
                 disabled={promoApplied}
@@ -439,7 +443,7 @@ export default function PaymentPage() {
               />
               {promoApplied && (
                 <button
-                  onClick={() => { setPromoApplied(false); setPromoCode('') }}
+                  onClick={() => { setPromoApplied(false); setPromoCode(''); setPromoSalesPerson(null) }}
                   className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer"
                 >
                   <X size={16} className="text-gray-400" />
@@ -464,10 +468,18 @@ export default function PaymentPage() {
             <p className="text-xs text-red-500 mt-2 font-medium">{promoError}</p>
           )}
           {promoApplied && (
-            <p className="text-xs text-green-600 mt-2 font-medium flex items-center gap-1">
-              <CheckCircle2 size={12} />
-              Promo code applied! You saved {promoDiscount}% off
-            </p>
+            <div className="space-y-1">
+              <p className="text-xs text-green-600 mt-2 font-medium flex items-center gap-1">
+                <CheckCircle2 size={12} />
+                Promo code applied! You saved {promoDiscount}% off
+              </p>
+              {promoSalesPerson && (
+                <p className="text-xs text-blue-600 font-medium flex items-center gap-1">
+                  <Users size={12} />
+                  {promoSalesPerson.message}
+                </p>
+              )}
+            </div>
           )}
         </div>
 

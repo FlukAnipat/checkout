@@ -97,12 +97,28 @@ router.post('/validate-promo', authMiddleware, async (req, res) => {
 
     const finalPrice = calculateFinalPrice(code, promo.discount_percent);
 
+    // ตรวจสอบว่า promo code มีข้อมูลเซลหรือไม่
+    let salesPerson = null;
+    if (promo.sales_person_id) {
+      const [salesUser] = await pool.execute(
+        'SELECT first_name, last_name FROM users WHERE user_id = ?',
+        [promo.sales_person_id]
+      );
+      if (salesUser.length > 0) {
+        salesPerson = `${salesUser[0].first_name} ${salesUser[0].last_name}`;
+      }
+    }
+
     res.json({
       success: true,
       message: 'Promo code is valid!',
       discount: `${promo.discount_percent}%`,
       finalPrice,
       currency: PRICING.currency,
+      salesPerson: salesPerson ? {
+        name: salesPerson,
+        message: `Promo code provided by: ${salesPerson}`
+      } : null,
     });
   } catch (err) {
     console.error('Promo validation error:', err);
