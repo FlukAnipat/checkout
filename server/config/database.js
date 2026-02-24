@@ -3,7 +3,7 @@
  * MySQL via XAMPP for local development
  */
 
-import mysql from 'mysql2/promise';
+import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -14,29 +14,23 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 🗄️ MySQL CONNECTION POOL
+// 🗄️ PostgreSQL CONNECTION POOL
 // ═══════════════════════════════════════════════════════════════════════════
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '3306'),
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',        // XAMPP default = no password
-  database: process.env.DB_NAME || 'shwe_flash_db',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
 // Test connection on startup
 (async () => {
   try {
-    const conn = await pool.getConnection();
-    console.log('✅ Connected to MySQL database (shwe_flash_db)');
-    conn.release();
+    const client = await pool.connect();
+    console.log('✅ Connected to PostgreSQL database');
+    client.release();
   } catch (err) {
-    console.error('❌ MySQL connection failed:', err.message);
-    console.error('💡 Make sure XAMPP MySQL is running and database "shwe_flash_db" exists');
+    console.error('❌ PostgreSQL connection failed:', err.message);
+    console.error('💡 Make sure DATABASE_URL is set correctly');
   }
 })();
 
@@ -45,11 +39,11 @@ const pool = mysql.createPool({
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function getUserByEmail(email) {
-  const [rows] = await pool.execute(
-    'SELECT * FROM users WHERE email = ?',
+  const result = await pool.query(
+    'SELECT * FROM users WHERE email = $1',
     [email.toLowerCase().trim()]
   );
-  return rows[0] || null;
+  return result.rows[0] || null;
 }
 
 export async function getUserById(userId) {
