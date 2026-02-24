@@ -7,8 +7,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load .env from server directory
-dotenv.config({ path: path.join(__dirname, '..', 'server', '.env') });
+// Vercel uses Environment Variables automatically
 
 import authRoutes from '../server/routes/auth.js';
 import paymentRoutes from '../server/routes/payment.js';
