@@ -7,7 +7,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Vercel uses Environment Variables automatically
+// Load environment variables for Vercel
+dotenv.config();
 
 import authRoutes from '../server/routes/auth.js';
 import paymentRoutes from '../server/routes/payment.js';
