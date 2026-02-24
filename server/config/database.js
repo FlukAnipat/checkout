@@ -17,12 +17,12 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 // 🗄️ MySQL CONNECTION POOL (Railway)
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Parse Railway MySQL connection string
-const railwayUrl = process.env.DATABASE_URL || 'mysql://root:ERtQWdFODWIAyiGyBsxEcCyDqlImcEJB@shinkansen.proxy.rlwy.net:56119/hsk-shwe-flash-db';
+// Railway auto-discovers MySQL database connection
+const railwayUrl = process.env.DATABASE_URL;
 
 let pool;
 
-if (railwayUrl.includes('mysql://')) {
+if (railwayUrl && railwayUrl.includes('mysql://')) {
   // Parse Railway connection string
   const url = new URL(railwayUrl);
   pool = mysql.createPool({
@@ -43,7 +43,7 @@ if (railwayUrl.includes('mysql://')) {
     keepAliveInitialDelay: 0
   });
 } else {
-  // Fallback to individual environment variables
+  // Fallback to individual environment variables (for local development)
   pool = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '3306'),
