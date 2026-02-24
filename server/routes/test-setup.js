@@ -3,7 +3,7 @@ import { getAdminDashboardStats, getSalesDashboardStats } from '../config/databa
 
 const router = express.Router();
 
-// Test dashboard stats
+// Test dashboard stats (no auth required)
 router.get('/test-stats', async (req, res) => {
   try {
     const adminStats = await getAdminDashboardStats();
@@ -13,13 +13,14 @@ router.get('/test-stats', async (req, res) => {
       success: true,
       adminStats,
       salesStats,
-      message: 'Dashboard stats test'
+      message: 'Dashboard stats test - no auth required'
     });
   } catch (error) {
     console.error('Test stats error:', error);
     res.status(500).json({ 
       success: false, 
-      error: error.message 
+      error: error.message,
+      stack: error.stack
     });
   }
 });
