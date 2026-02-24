@@ -11,15 +11,33 @@ const router = express.Router();
 // GET /api/setup - Create tables and import data (run once)
 router.get('/', async (req, res) => {
   try {
-    const conn = await mysql.createConnection({
-      host: process.env.DB_HOST,
-      port: parseInt(process.env.DB_PORT || '3306'),
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-      ssl: { rejectUnauthorized: false },
-      multipleStatements: true
-    });
+    let connConfig;
+    const dbUrl = process.env.DATABASE_URL;
+
+    if (dbUrl && dbUrl.includes('mysql://')) {
+      const url = new URL(dbUrl);
+      connConfig = {
+        host: url.hostname,
+        port: parseInt(url.port) || 3306,
+        user: url.username,
+        password: url.password,
+        database: url.pathname.substring(1),
+        ssl: { rejectUnauthorized: false },
+        multipleStatements: true
+      };
+    } else {
+      connConfig = {
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '3306'),
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: process.env.DB_NAME || 'shwe_flash_db',
+        ssl: { rejectUnauthorized: false },
+        multipleStatements: true
+      };
+    }
+
+    const conn = await mysql.createConnection(connConfig);
 
     console.log('Setup: Connected to MySQL!');
 

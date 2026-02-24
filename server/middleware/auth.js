@@ -14,7 +14,7 @@ export default function authMiddleware(req, res, next) {
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'shwe_flash_secret_key_change_in_production_2024');
     req.user = decoded; // { userId, email }
     next();
   } catch (err) {
