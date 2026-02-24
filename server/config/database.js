@@ -18,15 +18,7 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 // ═══════════════════════════════════════════════════════════════════════════
 
 // Parse Railway MySQL connection string
-// ⚠️ IMPORTANT: Must set DATABASE_URL in Railway environment variables!
-const railwayUrl = process.env.DATABASE_URL;
-
-if (!railwayUrl) {
-  console.error('🚨 DATABASE_URL environment variable is required!');
-  console.error('Please set it in Railway dashboard:');
-  console.error('DATABASE_URL=mysql://root:ERtQWdFODWIAyiGyBsxEcCyDqlImcEJB@shinkansen.proxy.rlwy.net:56119/hsk-shwe-flash-db');
-  process.exit(1);
-}
+const railwayUrl = process.env.DATABASE_URL || 'mysql://root:ERtQWdFODWIAyiGyBsxEcCyDqlImcEJB@shinkansen.proxy.rlwy.net:56119/hsk-shwe-flash-db';
 
 let pool;
 
