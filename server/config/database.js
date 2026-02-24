@@ -24,8 +24,11 @@ const pool = new pg.Pool({
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'postgres',
   ssl: {
-    rejectUnauthorized: false
-  }
+    rejectUnauthorized: false,
+    sslmode: 'require'
+  },
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000
 });
 
 // Test connection on startup
