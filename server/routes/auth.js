@@ -177,4 +177,22 @@ router.put('/me', authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/auth/logout
+ * Logout user (requires JWT)
+ */
+router.post('/logout', authMiddleware, async (req, res) => {
+  try {
+    // In a stateless JWT system, logout is typically handled client-side
+    // by removing the token. Here we just return success.
+    res.json({
+      success: true,
+      message: 'Logout successful',
+    });
+  } catch (err) {
+    console.error('Logout error:', err);
+    res.status(500).json({ error: 'Logout failed' });
+  }
+});
+
 export default router;

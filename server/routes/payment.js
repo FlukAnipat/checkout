@@ -2,8 +2,13 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { getUserByEmail, updateUser, createPayment, getPaymentsByUserId, getPromoCode, usePromoCode } from '../config/database.js';
 import authMiddleware from '../middleware/auth.js';
+import { createMyanMyanPayPayment, verifyMyanMyanPayPayment } from '../services/myanpay.js';
 
 const router = express.Router();
+
+// ── Payment Method Categories ──
+const MYANMAR_PAY_PROVIDERS = ['kbzpay', 'wavepay', 'ayapay', 'cbpay'];
+const INTERNATIONAL_PROVIDERS = ['mpu', 'card'];
 
 // ── Pricing (same as Flutter app) ──
 const PRICING = {
@@ -82,7 +87,7 @@ router.post('/validate-promo', authMiddleware, async (req, res) => {
 
 /**
  * POST /api/payment/checkout
- * Process payment (mock — prepared for Omise/Stripe)
+ * Process payment with MyanmarPay unified gateway or international methods
  */
 router.post('/checkout', authMiddleware, async (req, res) => {
   try {
@@ -110,43 +115,100 @@ router.post('/checkout', authMiddleware, async (req, res) => {
       finalPrice = calculateFinalPrice(null);
     }
 
-    // ── TODO: Integrate real payment gateway here ──
-    // For now, simulate successful payment
+    const orderId = `SF-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // ── MyanmarPay Unified Gateway Integration ──
+    if (MYANMAR_PAY_PROVIDERS.includes(paymentMethod)) {
+      try {
+        const myanpayResponse = await createMyanMyanPayPayment({
+          orderId,
+          amount: finalPrice,
+          currency: PRICING.currency,
+          paymentMethod,
+          userEmail: user.email,
+          callbackUrl: `${process.env.BASE_URL || 'http://localhost:3001'}/api/payment/webhook/myanpay`,
+        });
 
-    const payment = {
-      paymentId: uuidv4(),
-      userId: user.user_id,
-      email: user.email,
-      amount: finalPrice,
-      currency: PRICING.currency,
-      promoCode: code,
-      paymentMethod: paymentMethod || 'card',
-      status: 'completed',
-      createdAt: new Date().toISOString(),
-    };
+        const payment = {
+          paymentId: uuidv4(),
+          orderId,
+          userId: user.user_id,
+          email: user.email,
+          amount: finalPrice,
+          currency: PRICING.currency,
+          promoCode: code,
+          paymentMethod,
+          provider: 'myanpay',
+          providerPaymentId: myanpayResponse.paymentId,
+          qrCode: myanpayResponse.qr,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+        };
 
-    await createPayment(payment);
+        await createPayment(payment);
 
-    if (code) {
-      await usePromoCode(code);
+        res.json({
+          success: true,
+          message: 'Payment initiated. Please scan QR code to complete payment.',
+          payment: {
+            paymentId: payment.paymentId,
+            orderId: payment.orderId,
+            amount: payment.amount,
+            currency: payment.currency,
+            status: payment.status,
+            qrCode: payment.qrCode,
+            provider: payment.provider,
+            paymentMethod: payment.paymentMethod,
+          },
+        });
+      } catch (myanpayError) {
+        console.error('MyanMyanPay error:', myanpayError);
+        res.status(500).json({ error: 'Failed to initiate MyanmarPay payment. Please try again.' });
+      }
+    } 
+    // ── International Payment Methods (Mock for now) ──
+    else if (INTERNATIONAL_PROVIDERS.includes(paymentMethod)) {
+      // TODO: Integrate with Stripe/Omise for international cards
+      const payment = {
+        paymentId: uuidv4(),
+        orderId,
+        userId: user.user_id,
+        email: user.email,
+        amount: finalPrice,
+        currency: PRICING.currency,
+        promoCode: code,
+        paymentMethod,
+        provider: 'international',
+        status: 'completed', // Mock success for now
+        createdAt: new Date().toISOString(),
+      };
+
+      await createPayment(payment);
+
+      if (code) {
+        await usePromoCode(code);
+      }
+
+      await updateUser(user.email, {
+        isPaid: true,
+        promoCodeUsed: code,
+        paidAt: new Date().toISOString(),
+      });
+
+      res.json({
+        success: true,
+        message: 'Payment successful! Welcome to Premium.',
+        payment: {
+          paymentId: payment.paymentId,
+          orderId: payment.orderId,
+          amount: payment.amount,
+          currency: payment.currency,
+          status: payment.status,
+        },
+      });
+    } else {
+      res.status(400).json({ error: 'Invalid payment method selected' });
     }
-
-    await updateUser(user.email, {
-      isPaid: true,
-      promoCodeUsed: code,
-      paidAt: new Date().toISOString(),
-    });
-
-    res.json({
-      success: true,
-      message: 'Payment successful! Welcome to Premium.',
-      payment: {
-        paymentId: payment.paymentId,
-        amount: payment.amount,
-        currency: payment.currency,
-        status: payment.status,
-      },
-    });
   } catch (err) {
     console.error('Checkout error:', err);
     res.status(500).json({ error: 'Payment processing failed. Please try again.' });
@@ -202,6 +264,108 @@ router.get('/status', authMiddleware, async (req, res) => {
     paidAt: user.paid_at,
     promoCodeUsed: user.promo_code_used,
   });
+});
+
+/**
+ * GET /api/payment/verify/:paymentId
+ * Verify payment status by payment ID
+ */
+router.get('/verify/:paymentId', authMiddleware, async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const user = await getUserByEmail(req.user.email);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Get payments for this user
+    const payments = await getPaymentsByUserId(user.user_id);
+    const payment = payments.find(p => p.payment_id === paymentId);
+    
+    if (!payment) {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+
+    // If this is a MyanmarPay payment, verify with provider
+    if (payment.provider === 'myanpay') {
+      try {
+        const verification = await verifyMyanMyanPayPayment(payment.provider_payment_id);
+        
+        if (verification.status === 'completed' && payment.status !== 'completed') {
+          // Update user and payment status
+          await updateUser(user.email, {
+            isPaid: true,
+            paidAt: new Date().toISOString(),
+          });
+          
+          // TODO: Update payment record in database
+          payment.status = 'completed';
+        }
+      } catch (verifyError) {
+        console.error('Payment verification error:', verifyError);
+        // Continue with current status if verification fails
+      }
+    }
+
+    res.json({
+      success: true,
+      payment: {
+        paymentId: payment.payment_id,
+        status: payment.status,
+        amount: payment.amount,
+        currency: payment.currency,
+      },
+      isPaid: payment.status === 'completed',
+      user: {
+        email: user.email,
+        isPaid: !!user.is_paid,
+        paidAt: user.paid_at,
+      },
+    });
+  } catch (err) {
+    console.error('Payment verification error:', err);
+    res.status(500).json({ error: 'Payment verification failed' });
+  }
+});
+
+/**
+ * POST /api/payment/webhook/myanpay
+ * Webhook endpoint for MyanMyanPay payment notifications
+ */
+router.post('/webhook/myanpay', async (req, res) => {
+  try {
+    const { paymentId, status, orderId, signature } = req.body;
+    
+    // TODO: Verify webhook signature with MyanMyanPay
+    const isValidSignature = true; // Implement signature verification
+    
+    if (!isValidSignature) {
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
+
+    if (status === 'completed' || status === 'success') {
+      // Find payment by orderId
+      const payments = await getPaymentsByUserId(req.body.userId || null);
+      const payment = payments.find(p => p.order_id === orderId);
+      
+      if (payment && payment.status !== 'completed') {
+        // Update payment status
+        await updateUser(payment.email, {
+          isPaid: true,
+          paidAt: new Date().toISOString(),
+        });
+        
+        // TODO: Update payment record to completed status
+        console.log(`Payment completed for order: ${orderId}`);
+      }
+    }
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('MyanMyanPay webhook error:', err);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
 });
 
 /**

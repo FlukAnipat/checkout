@@ -9,6 +9,7 @@ const api = axios.create({
 
 // Attach JWT token to every request
 api.interceptors.request.use((config) => {
+  // TODO: Get token from auth context instead of localStorage
   const token = localStorage.getItem('sf_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -21,6 +22,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // TODO: Clear auth context instead of localStorage
       localStorage.removeItem('sf_token');
       localStorage.removeItem('sf_user');
       window.location.href = '/login';
@@ -51,6 +53,15 @@ export const paymentAPI = {
 
   checkout: (data) =>
     api.post('/payment/checkout', data),
+
+  verifyPayment: (paymentId) =>
+    api.get(`/payment/verify/${paymentId}`),
+
+  getCurrentUser: () =>
+    api.get('/auth/me'),
+
+  logout: () =>
+    api.post('/auth/logout'),
 
   getStatus: () =>
     api.get('/payment/status'),

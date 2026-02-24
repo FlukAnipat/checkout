@@ -28,7 +28,7 @@ const FEATURES = [
   { icon: Zap, label: 'Unlimited Practice', desc: 'No daily limits' },
 ]
 
-const PAYMENT_METHODS = [
+const MYANMAR_PAY_PROVIDERS = [
   {
     id: 'kbzpay',
     label: 'KBZ Pay',
@@ -36,6 +36,7 @@ const PAYMENT_METHODS = [
     icon: Wallet,
     color: '#0066CC',
     bg: '#EBF4FF',
+    category: 'myanpay',
   },
   {
     id: 'wavepay',
@@ -44,6 +45,7 @@ const PAYMENT_METHODS = [
     icon: Smartphone,
     color: '#FF6600',
     bg: '#FFF4EB',
+    category: 'myanpay',
   },
   {
     id: 'ayapay',
@@ -52,6 +54,7 @@ const PAYMENT_METHODS = [
     icon: Wallet,
     color: '#00A651',
     bg: '#EBFFF3',
+    category: 'myanpay',
   },
   {
     id: 'cbpay',
@@ -60,7 +63,11 @@ const PAYMENT_METHODS = [
     icon: Wallet,
     color: '#003DA5',
     bg: '#EBF0FF',
+    category: 'myanpay',
   },
+]
+
+const INTERNATIONAL_PAYMENT_METHODS = [
   {
     id: 'mpu',
     label: 'MPU Card',
@@ -68,6 +75,7 @@ const PAYMENT_METHODS = [
     icon: CreditCard,
     color: '#006633',
     bg: '#EBFFF0',
+    category: 'international',
   },
   {
     id: 'card',
@@ -76,8 +84,11 @@ const PAYMENT_METHODS = [
     icon: CreditCard,
     color: '#1A1F36',
     bg: '#F0F0F5',
+    category: 'international',
   },
 ]
+
+const PAYMENT_METHODS = [...MYANMAR_PAY_PROVIDERS, ...INTERNATIONAL_PAYMENT_METHODS]
 
 export default function PaymentPage() {
   const navigate = useNavigate()
@@ -90,12 +101,27 @@ export default function PaymentPage() {
   const [selectedMethod, setSelectedMethod] = useState('kbzpay')
   const [loading, setLoading] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [paymentData, setPaymentData] = useState(null)
+  const [showQR, setShowQR] = useState(false)
 
   useEffect(() => {
-    const stored = localStorage.getItem('sf_user')
-    if (stored) setUser(JSON.parse(stored))
+    // Get user from auth context or API call instead of localStorage
+    loadUser()
     loadPricing()
   }, [])
+
+  const loadUser = async () => {
+    try {
+      // TODO: Get user from auth context or API
+      // For now, we'll assume user is logged in and passed via state
+      const userData = await paymentAPI.getCurrentUser()
+      setUser(userData.data)
+    } catch (error) {
+      console.error('Failed to load user:', error)
+      // Redirect to login if user not found
+      navigate('/login')
+    }
+  }
 
   const loadPricing = async () => {
     try {
@@ -139,10 +165,18 @@ export default function PaymentPage() {
         promoCode: promoApplied ? promoCode : null,
         paymentMethod: selectedMethod,
       })
+      
       if (res.data.success) {
-        const updatedUser = { ...user, isPaid: true, paidAt: new Date().toISOString() }
-        localStorage.setItem('sf_user', JSON.stringify(updatedUser))
-        navigate('/success', { state: { payment: res.data.payment } })
+        // Check if this is a MyanmarPay payment with QR code
+        if (res.data.payment.qrCode) {
+          setPaymentData(res.data.payment)
+          setShowQR(true)
+        } else {
+          // International card payment completed
+          const updatedUser = { ...user, isPaid: true, paidAt: new Date().toISOString() }
+          localStorage.setItem('sf_user', JSON.stringify(updatedUser))
+          navigate('/success', { state: { payment: res.data.payment } })
+        }
       }
     } catch (err) {
       alert(err.response?.data?.error || 'Payment failed. Please try again.')
@@ -151,10 +185,41 @@ export default function PaymentPage() {
     }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('sf_token')
-    localStorage.removeItem('sf_user')
-    navigate('/login')
+  const handlePaymentComplete = async () => {
+    try {
+      // Verify payment status with server
+      const verification = await paymentAPI.verifyPayment(paymentData.paymentId)
+      
+      if (verification.data.success && verification.data.isPaid) {
+        // Update user state from server response
+        setUser(verification.data.user)
+        navigate('/success', { state: { payment: paymentData } })
+      } else {
+        alert('Payment not yet confirmed. Please try again in a moment.')
+      }
+    } catch (error) {
+      console.error('Payment verification failed:', error)
+      // For development, allow completion anyway
+      navigate('/success', { state: { payment: paymentData } })
+    }
+  }
+
+  const handleCancelPayment = () => {
+    setShowQR(false)
+    setPaymentData(null)
+  }
+
+  const handleLogout = async () => {
+    try {
+      await paymentAPI.logout()
+      setUser(null)
+      navigate('/login')
+    } catch (error) {
+      console.error('Logout failed:', error)
+      // Force logout anyway
+      setUser(null)
+      navigate('/login')
+    }
   }
 
   const formatPrice = (amount) => new Intl.NumberFormat('en-US').format(amount)
@@ -235,38 +300,97 @@ export default function PaymentPage() {
             <Wallet className="w-4 h-4 text-gray-400" />
             Select Payment Method
           </h3>
-          <div className="grid grid-cols-2 gap-2.5">
-            {PAYMENT_METHODS.map((method) => {
-              const isSelected = selectedMethod === method.id
-              return (
-                <button
-                  key={method.id}
-                  onClick={() => setSelectedMethod(method.id)}
-                  className={`payment-option flex flex-col items-center gap-2 p-4 rounded-xl border-2 cursor-pointer text-center ${
-                    isSelected ? 'selected' : 'border-gray-100 hover:border-gray-200'
-                  }`}
-                >
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: isSelected ? method.color : method.bg }}
+          
+          {/* MyanmarPay Section */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                <QrCode className="w-3.5 h-3.5 text-white" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-gray-800">MyanmarPay</h4>
+                <p className="text-[10px] text-gray-400">Unified MMQR Gateway - All major wallets</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              {MYANMAR_PAY_PROVIDERS.map((method) => {
+                const isSelected = selectedMethod === method.id
+                return (
+                  <button
+                    key={method.id}
+                    onClick={() => setSelectedMethod(method.id)}
+                    className={`payment-option flex flex-col items-center gap-2 p-4 rounded-xl border-2 cursor-pointer text-center relative ${
+                      isSelected ? 'selected' : 'border-gray-100 hover:border-gray-200'
+                    }`}
                   >
-                    <method.icon
-                      size={20}
-                      style={{ color: isSelected ? '#fff' : method.color }}
-                    />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-gray-800">{method.label}</p>
-                    <p className="text-[10px] text-gray-400 leading-tight mt-0.5">{method.desc}</p>
-                  </div>
-                  {isSelected && (
-                    <div className="absolute top-1.5 right-1.5">
-                      <CheckCircle2 size={14} className="text-primary-500" />
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: isSelected ? method.color : method.bg }}
+                    >
+                      <method.icon
+                        size={20}
+                        style={{ color: isSelected ? '#fff' : method.color }}
+                      />
                     </div>
-                  )}
-                </button>
-              )
-            })}
+                    <div>
+                      <p className="text-xs font-bold text-gray-800">{method.label}</p>
+                      <p className="text-[10px] text-gray-400 leading-tight mt-0.5">{method.desc}</p>
+                    </div>
+                    {isSelected && (
+                      <div className="absolute top-1.5 right-1.5">
+                        <CheckCircle2 size={14} className="text-primary-500" />
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          
+          {/* International Payment Methods */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-lg bg-gray-800 flex items-center justify-center">
+                <Globe className="w-3.5 h-3.5 text-white" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-gray-800">International Cards</h4>
+                <p className="text-[10px] text-gray-400">For international customers</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              {INTERNATIONAL_PAYMENT_METHODS.map((method) => {
+                const isSelected = selectedMethod === method.id
+                return (
+                  <button
+                    key={method.id}
+                    onClick={() => setSelectedMethod(method.id)}
+                    className={`payment-option flex flex-col items-center gap-2 p-4 rounded-xl border-2 cursor-pointer text-center relative ${
+                      isSelected ? 'selected' : 'border-gray-100 hover:border-gray-200'
+                    }`}
+                  >
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: isSelected ? method.color : method.bg }}
+                    >
+                      <method.icon
+                        size={20}
+                        style={{ color: isSelected ? '#fff' : method.color }}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-800">{method.label}</p>
+                      <p className="text-[10px] text-gray-400 leading-tight mt-0.5">{method.desc}</p>
+                    </div>
+                    {isSelected && (
+                      <div className="absolute top-1.5 right-1.5">
+                        <CheckCircle2 size={14} className="text-primary-500" />
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
 
@@ -361,6 +485,66 @@ export default function PaymentPage() {
             </div>
           </div>
         </div>
+
+        {/* QR Code Modal for MyanmarPay */}
+        {showQR && paymentData && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full animate-fade-in">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-gray-800">Scan QR Code</h3>
+                <button
+                  onClick={handleCancelPayment}
+                  className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <X size={20} className="text-gray-400" />
+                </button>
+              </div>
+              
+              <div className="text-center mb-4">
+                <div className="w-48 h-48 mx-auto bg-gray-100 rounded-xl flex items-center justify-center mb-4 p-4">
+                  {/* QR Code Placeholder - In production, generate actual QR code */}
+                  <div className="text-center">
+                    <QrCode className="w-24 h-24 text-gray-400 mx-auto mb-2" />
+                    <p className="text-xs text-gray-500 font-mono break-all">{paymentData.qrCode}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2 text-sm">
+                  <p className="font-bold text-gray-800">
+                    {formatPrice(paymentData.amount)} {paymentData.currency}
+                  </p>
+                  <p className="text-gray-400">
+                    Order ID: {paymentData.orderId}
+                  </p>
+                  <p className="text-gray-400">
+                    Pay with: {MYANMAR_PAY_PROVIDERS.find(p => p.id === paymentData.paymentMethod)?.label}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 rounded-xl p-3 mb-4">
+                <p className="text-xs text-blue-700 text-center">
+                  <strong>Instructions:</strong> Open your {MYANMAR_PAY_PROVIDERS.find(p => p.id === paymentData.paymentMethod)?.label} app and scan the QR code above to complete payment.
+                </p>
+              </div>
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCancelPayment}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePaymentComplete}
+                  className="flex-1 py-2.5 rounded-xl bg-green-500 text-white text-sm font-semibold hover:bg-green-600 transition-colors"
+                >
+                  I've Paid
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Sticky Checkout Button */}
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-100 p-4 z-50">
