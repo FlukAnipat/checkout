@@ -197,8 +197,8 @@ export async function createPayment(paymentData) {
   const sql = `
     INSERT INTO payments (
       payment_id, user_id, amount, currency, payment_method,
-      promo_code, status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      promo_code, referral_id, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
   const params = [
     paymentData.paymentId,
@@ -207,6 +207,7 @@ export async function createPayment(paymentData) {
     paymentData.currency || 'MMK',
     paymentData.paymentMethod,
     paymentData.promoCode || null,
+    paymentData.referralId || null,
     paymentData.status || 'completed'
   ];
   await pool.execute(sql, params);
@@ -245,26 +246,65 @@ export async function usePromoCode(code) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 🎯 REFERRAL SYSTEM OPERATIONS
+// 🎯 SALES CODE SYSTEM
+// เซลให้ code กับ user → user ใส่ code → เช็คว่ามีในฐานข้อมูลไหม
+// 1 user ใส่ได้แค่ 1 ครั้ง → เก็บข้อมูลเพื่อคำนวณค่าคอม 20%
 // ═══════════════════════════════════════════════════════════════════════════
 
-export async function createReferral(referrerId, referredId, referralCode) {
-  const sql = `
-    INSERT INTO referrals (referrer_id, referred_id, referral_code, commission_percent)
-    VALUES (?, ?, ?, 20.00)
-  `;
-  await pool.execute(sql, [referrerId, referredId, referralCode]);
-}
-
-export async function getReferralByCode(code) {
+// ตรวจสอบว่า sales code มีอยู่ในฐานข้อมูลไหม
+export async function getSalesCode(code) {
   const [rows] = await pool.execute(
-    'SELECT * FROM referral_codes WHERE code = ? AND is_active = 1',
+    `SELECT rc.*, u.first_name, u.last_name, u.email 
+     FROM referral_codes rc 
+     JOIN users u ON rc.user_id = u.user_id 
+     WHERE rc.code = ? AND rc.is_active = 1`,
     [code.toUpperCase().trim()]
   );
   return rows[0] || null;
 }
 
-export async function useReferralCode(code) {
+// ตรวจสอบว่า user เคยใส่ sales code แล้วหรือยัง (1 ครั้งต่อ 1 user)
+export async function checkUserHasSalesCode(userId) {
+  const [rows] = await pool.execute(
+    'SELECT referred_by FROM users WHERE user_id = ? AND referred_by IS NOT NULL',
+    [userId]
+  );
+  return rows[0] || null;
+}
+
+// บันทึก sales code ให้ user (1 ครั้งเท่านั้น)
+export async function assignSalesCodeToUser(userId, salesCode) {
+  const [result] = await pool.execute(
+    'UPDATE users SET referred_by = ? WHERE user_id = ? AND referred_by IS NULL',
+    [salesCode.toUpperCase().trim(), userId]
+  );
+  return result.affectedRows > 0;
+}
+
+// สร้าง referral record เมื่อ checkout สำเร็จ (เก็บค่าคอม 20%)
+export async function createReferral(referrerId, referredId, salesCode) {
+  const sql = `
+    INSERT INTO referrals (referrer_id, referred_id, referral_code, commission_percent)
+    VALUES (?, ?, ?, 20.00)
+  `;
+  const [result] = await pool.execute(sql, [referrerId, referredId, salesCode]);
+  return result.insertId;
+}
+
+// อัปเดตค่าคอม 20% เมื่อ payment สำเร็จ
+export async function completeReferralCommission(referralId, paymentAmount) {
+  const commissionAmount = paymentAmount * 0.20;
+  const sql = `
+    UPDATE referrals 
+    SET commission_amount = ?, status = 'completed', completed_at = NOW()
+    WHERE id = ?
+  `;
+  await pool.execute(sql, [commissionAmount, referralId]);
+  return commissionAmount;
+}
+
+// เพิ่ม used_count ของ sales code
+export async function useSalesCode(code) {
   const [result] = await pool.execute(
     'UPDATE referral_codes SET used_count = used_count + 1 WHERE code = ?',
     [code.toUpperCase().trim()]
@@ -272,23 +312,9 @@ export async function useReferralCode(code) {
   return result.affectedRows > 0;
 }
 
-export async function createReferralCommission(referralId, amount) {
-  const commissionAmount = amount * 0.20; // 20% commission
-  const sql = `
-    UPDATE referrals 
-    SET commission_amount = ?, status = 'completed', completed_at = NOW()
-    WHERE id = ?
-  `;
-  await pool.execute(sql, [commissionAmount, referralId]);
-}
-
-export async function getReferralsByUserId(userId) {
-  const [rows] = await pool.execute(
-    'SELECT * FROM referrals WHERE referrer_id = ? ORDER BY created_at DESC',
-    [userId]
-  );
-  return rows;
-}
+// ═══════════════════════════════════════════════════════════════════════════
+// �️ PROMO CODE USAGE TRACKING
+// ═══════════════════════════════════════════════════════════════════════════
 
 export async function checkPromoCodeUsage(userId, promoCode) {
   const [rows] = await pool.execute(
@@ -304,121 +330,6 @@ export async function recordPromoCodeUsage(userId, promoCode, discountAmount, or
     VALUES (?, ?, ?, ?)
   `;
   await pool.execute(sql, [promoCode.toUpperCase().trim(), userId, discountAmount, orderId]);
-}
-
-export async function updateReferralCode(userId, referralCode) {
-  const [result] = await pool.execute(
-    'UPDATE users SET referral_code = ? WHERE user_id = ?',
-    [referralCode.toUpperCase().trim(), userId]
-  );
-  return result.affectedRows > 0;
-}
-
-export async function updateReferredBy(userId, referralCode) {
-  const referral = await getReferralByCode(referralCode);
-  if (referral) {
-    const [result] = await pool.execute(
-      'UPDATE users SET referred_by = ? WHERE user_id = ?',
-      [referral.user_id, userId]
-    );
-    return result.affectedRows > 0;
-  }
-  return false;
-}
-
-// ═════════════════════════════════════════════════════════════════════════════
-// 🎯 REFERRAL CODE GENERATION
-// ═══════════════════════════════════════════════════════════════════════════
-
-export async function generateReferralCode(userId) {
-  // สุ่มแบบสุ่ม: FLASH + 6 ตัวอักษร + 3 ตัวเลข
-  const prefix = 'FLASH';
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = prefix;
-  
-  // เพิ่ม 6 ตัวอักษร
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  
-  // เพิ่ม 3 ตัวเลข
-  code += Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  
-  return code;
-}
-
-export async function createReferralCodeForUser(userId) {
-  try {
-    // ตรวจสอบว่ามี referral code อยู่แล้ว
-    const [existingUser] = await pool.execute(
-      'SELECT referral_code FROM users WHERE user_id = ? AND referral_code IS NOT NULL',
-      [userId]
-    );
-    
-    if (existingUser.length > 0) {
-      return existingUser[0].referral_code;
-    }
-    
-    // สร้าง referral code ใหม่
-    const newCode = await generateReferralCode(userId);
-    
-    // ตรวจสอบว่า code ซ้ำในระบบ
-    const [existingCode] = await pool.execute(
-      'SELECT code FROM referral_codes WHERE code = ?',
-      [newCode]
-    );
-    
-    if (existingCode.length > 0) {
-      // ถ้าซ้ำ สร้างใหม่
-      return await createReferralCodeForUser(userId);
-    }
-    
-    // บันทึก referral code
-    await pool.execute(
-      'INSERT INTO referral_codes (code, user_id, max_uses, is_active) VALUES (?, ?, 100, 1)',
-      [newCode, userId]
-    );
-    
-    // อัปเดต user table
-    await pool.execute(
-      'UPDATE users SET referral_code = ? WHERE user_id = ?',
-      [newCode, userId]
-    );
-    
-    return newCode;
-  } catch (error) {
-    console.error('Error creating referral code:', error);
-    throw error;
-  }
-}
-
-export async function checkReferralCodeExists(code) {
-  try {
-    const [result] = await pool.execute(
-      'SELECT code FROM referral_codes WHERE code = ? AND is_active = 1',
-      [code.toUpperCase().trim()]
-    );
-    return result.length > 0;
-  } catch (error) {
-    console.error('Error checking referral code:', error);
-    return false;
-  }
-}
-
-export async function getReferralCodeInfo(code) {
-  try {
-    const [result] = await pool.execute(
-      `SELECT rc.*, u.first_name, u.last_name, u.email 
-       FROM referral_codes rc 
-       JOIN users u ON rc.user_id = u.user_id 
-       WHERE rc.code = ? AND rc.is_active = 1`,
-      [code.toUpperCase().trim()]
-    );
-    return result[0] || null;
-  } catch (error) {
-    console.error('Error getting referral code info:', error);
-    return null;
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

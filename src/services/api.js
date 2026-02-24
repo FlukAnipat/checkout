@@ -50,6 +50,9 @@ export const paymentAPI = {
   validatePromo: (promoCode) =>
     api.post('/payment/validate-promo', { promoCode }),
 
+  validateSalesCode: (salesCode) =>
+    api.post('/payment/validate-sales-code', { salesCode }),
+
   checkout: (data) =>
     api.post('/payment/checkout', data),
 

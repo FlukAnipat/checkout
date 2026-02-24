@@ -9,10 +9,12 @@ import {
   usePromoCode,
   checkPromoCodeUsage,
   recordPromoCodeUsage,
-  getReferralByCode,
+  getSalesCode,
+  checkUserHasSalesCode,
+  assignSalesCodeToUser,
   createReferral,
-  createReferralCommission,
-  updateReferredBy
+  completeReferralCommission,
+  useSalesCode
 } from '../config/database.js';
 import authMiddleware from '../middleware/auth.js';
 import { createMyanMyanPayPayment, verifyMyanMyanPayPayment } from '../services/myanpay.js';
@@ -79,15 +81,13 @@ router.post('/validate-promo', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Check if user already used this promo code
+    if (user.is_paid) {
+      return res.status(400).json({ error: 'Premium members cannot use promo codes' });
+    }
+
     const existingUsage = await checkPromoCodeUsage(user.user_id, code);
     if (existingUsage) {
       return res.status(400).json({ error: 'You have already used this promo code' });
-    }
-
-    // Check if user is already paid
-    if (user.is_paid) {
-      return res.status(400).json({ error: 'Premium members cannot use promo codes' });
     }
 
     const promo = await getPromoCode(code);
@@ -95,12 +95,7 @@ router.post('/validate-promo', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Invalid or expired promo code' });
     }
 
-    let finalPrice = PRICING.basePrice;
-    if (code) {
-      finalPrice = calculateFinalPrice(code, promo.discount_percent);
-    } else {
-      finalPrice = calculateFinalPrice(null);
-    }
+    const finalPrice = calculateFinalPrice(code, promo.discount_percent);
 
     res.json({
       success: true,
@@ -116,12 +111,72 @@ router.post('/validate-promo', authMiddleware, async (req, res) => {
 });
 
 /**
+ * POST /api/payment/validate-sales-code
+ * ตรวจสอบ sales code ว่ามีในฐานข้อมูลไหม + user ใส่ได้แค่ 1 ครั้ง
+ */
+router.post('/validate-sales-code', authMiddleware, async (req, res) => {
+  const { salesCode } = req.body;
+
+  if (!salesCode || salesCode.trim().length === 0) {
+    return res.status(400).json({ error: 'Please enter a sales code' });
+  }
+
+  const code = salesCode.trim().toUpperCase();
+
+  try {
+    const user = await getUserByEmail(req.user.email);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // เช็คว่า user เคยใส่ sales code แล้วหรือยัง (1 ครั้งต่อ 1 user)
+    const existing = await checkUserHasSalesCode(user.user_id);
+    if (existing) {
+      return res.status(400).json({ 
+        error: 'You have already entered a sales code',
+        existingCode: existing.referred_by
+      });
+    }
+
+    // เช็คว่า sales code มีอยู่ในฐานข้อมูลไหม
+    const salesData = await getSalesCode(code);
+    if (!salesData) {
+      return res.status(400).json({ error: 'Invalid sales code' });
+    }
+
+    // ห้ามใส่ code ตัวเอง
+    if (salesData.user_id === user.user_id) {
+      return res.status(400).json({ error: 'You cannot use your own sales code' });
+    }
+
+    // บันทึก sales code ให้ user
+    const assigned = await assignSalesCodeToUser(user.user_id, code);
+    if (!assigned) {
+      return res.status(400).json({ error: 'Failed to assign sales code' });
+    }
+
+    res.json({
+      success: true,
+      message: `Sales code added! Salesperson: ${salesData.first_name} ${salesData.last_name}`,
+      salesPerson: {
+        name: `${salesData.first_name} ${salesData.last_name}`,
+        code: code,
+      },
+    });
+  } catch (err) {
+    console.error('Sales code validation error:', err);
+    res.status(500).json({ error: 'Failed to validate sales code' });
+  }
+});
+
+/**
  * POST /api/payment/checkout
- * Process payment with MyanmarPay unified gateway or international methods
+ * ชำระเงิน (mock - ยังไม่ใช้ payment gateway จริง)
+ * ถ้า user มี sales code → สร้าง referral record + คำนวณค่าคอม 20%
  */
 router.post('/checkout', authMiddleware, async (req, res) => {
   try {
-    const { promoCode, paymentMethod, referralCode } = req.body;
+    const { promoCode, paymentMethod } = req.body;
     const user = await getUserByEmail(req.user.email);
 
     if (!user) {
@@ -132,13 +187,12 @@ router.post('/checkout', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'You are already a premium member' });
     }
 
+    // ── คำนวณราคา ──
     let finalPrice = PRICING.basePrice;
     const code = promoCode ? promoCode.trim().toUpperCase() : null;
     let discountAmount = 0;
 
-    // Handle promo code
     if (code) {
-      // Check if user already used this promo code
       const existingUsage = await checkPromoCodeUsage(user.user_id, code);
       if (existingUsage) {
         return res.status(400).json({ error: 'You have already used this promo code' });
@@ -154,131 +208,64 @@ router.post('/checkout', authMiddleware, async (req, res) => {
       discountAmount = originalPrice - finalPrice;
     }
 
-    // Handle referral code
-    let referralId = null;
-    if (referralCode && !user.referred_by) {
-      const referral = await getReferralByCode(referralCode.trim().toUpperCase());
-      if (referral && referral.user_id !== user.user_id) {
-        // Create referral relationship
-        referralId = await createReferral(referral.user_id, user.user_id, referralCode.trim().toUpperCase());
-        await updateReferredBy(user.user_id, referralCode.trim().toUpperCase());
-        await useReferralCode(referralCode.trim().toUpperCase());
-      }
-    }
-
     const orderId = `SF-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    // ── MyanmarPay Unified Gateway Integration ──
-    if (MYANMAR_PAY_PROVIDERS.includes(paymentMethod)) {
-      try {
-        const myanpayResponse = await createMyanMyanPayPayment({
-          orderId,
-          amount: finalPrice,
-          currency: PRICING.currency,
-          paymentMethod,
-          userEmail: user.email,
-          callbackUrl: `${process.env.BASE_URL || 'http://localhost:3001'}/api/payment/webhook/myanpay`,
-        });
 
-        const payment = {
-          paymentId: uuidv4(),
-          orderId,
-          userId: user.user_id,
-          email: user.email,
-          amount: finalPrice,
-          currency: PRICING.currency,
-          promoCode: code,
-          referralId: referralId,
-          paymentMethod,
-          provider: 'myanpay',
-          providerPaymentId: myanpayResponse.paymentId,
-          qrCode: myanpayResponse.qr,
-          status: 'pending',
-          createdAt: new Date().toISOString(),
-        };
-
-        await createPayment(payment);
-
-        // Record promo code usage if applicable
-        if (code) {
-          await recordPromoCodeUsage(user.user_id, code, discountAmount, orderId);
-        }
-
-        res.json({
-          success: true,
-          message: 'Payment initiated. Please scan QR code to complete payment.',
-          payment: {
-            paymentId: payment.paymentId,
-            orderId: payment.orderId,
-            amount: payment.amount,
-            currency: payment.currency,
-            status: payment.status,
-            qrCode: payment.qrCode,
-            provider: payment.provider,
-            paymentMethod: payment.paymentMethod,
-          },
-        });
-      } catch (myanpayError) {
-        console.error('MyanMyanPay error:', myanpayError);
-        res.status(500).json({ error: 'Failed to initiate MyanmarPay payment. Please try again.' });
+    // ── เช็ค sales code ของ user (ถ้ามี) → สร้าง referral + ค่าคอม ──
+    let referralId = null;
+    if (user.referred_by) {
+      const salesData = await getSalesCode(user.referred_by);
+      if (salesData && salesData.user_id !== user.user_id) {
+        referralId = await createReferral(salesData.user_id, user.user_id, user.referred_by);
+        await useSalesCode(user.referred_by);
       }
-    } 
-    // ── International Payment Methods (Mock for now) ──
-    else if (INTERNATIONAL_PROVIDERS.includes(paymentMethod)) {
-      // TODO: Integrate with Stripe/Omise for international cards
-      const payment = {
-        paymentId: uuidv4(),
-        orderId,
-        userId: user.user_id,
-        email: user.email,
-        amount: finalPrice,
-        currency: PRICING.currency,
-        promoCode: code,
-        referralId: referralId,
-        paymentMethod,
-        provider: 'international',
-        status: 'completed', // Mock success for now
-        createdAt: new Date().toISOString(),
-      };
-
-      await createPayment(payment);
-
-      // Record promo code usage if applicable
-      if (code) {
-        await recordPromoCodeUsage(user.user_id, code, discountAmount, orderId);
-      }
-
-      // Use promo code
-      if (code) {
-        await usePromoCode(code);
-      }
-
-      // Update user to premium
-      await updateUser(user.email, {
-        isPaid: true,
-        promoCodeUsed: code,
-        paidAt: new Date().toISOString(),
-      });
-
-      // Create referral commission if applicable
-      if (referralId) {
-        await createReferralCommission(referralId, finalPrice);
-      }
-
-      res.json({
-        success: true,
-        message: 'Payment successful! Welcome to Premium.',
-        payment: {
-          paymentId: payment.paymentId,
-          orderId: payment.orderId,
-          amount: payment.amount,
-          currency: payment.currency,
-          status: payment.status,
-        },
-      });
-    } else {
-      res.status(400).json({ error: 'Invalid payment method selected' });
     }
+
+    // ── Mock Payment (ยังไม่ใช้ payment gateway จริง) ──
+    const payment = {
+      paymentId: uuidv4(),
+      orderId,
+      userId: user.user_id,
+      email: user.email,
+      amount: finalPrice,
+      currency: PRICING.currency,
+      promoCode: code,
+      referralId: referralId ? String(referralId) : null,
+      paymentMethod: paymentMethod || 'card',
+      status: 'completed',
+    };
+
+    await createPayment(payment);
+
+    // บันทึก promo code usage
+    if (code) {
+      await recordPromoCodeUsage(user.user_id, code, discountAmount, orderId);
+      await usePromoCode(code);
+    }
+
+    // อัปเดต user เป็น premium
+    await updateUser(user.email, {
+      isPaid: true,
+      promoCodeUsed: code,
+      paidAt: new Date().toISOString(),
+    });
+
+    // คำนวณค่าคอม 20% ให้เซล
+    if (referralId) {
+      const commission = await completeReferralCommission(referralId, finalPrice);
+      console.log(`💰 Commission ${commission} MMK for referral #${referralId}`);
+    }
+
+    res.json({
+      success: true,
+      message: 'Payment successful! Welcome to Premium.',
+      payment: {
+        paymentId: payment.paymentId,
+        orderId: payment.orderId,
+        amount: payment.amount,
+        currency: payment.currency,
+        status: payment.status,
+      },
+    });
   } catch (err) {
     console.error('Checkout error:', err);
     res.status(500).json({ error: 'Payment processing failed. Please try again.' });
@@ -433,7 +420,7 @@ router.post('/webhook/myanpay', async (req, res) => {
         
         // Create referral commission if applicable
         if (payment.referral_id) {
-          await createReferralCommission(payment.referral_id, payment.amount);
+          await completeReferralCommission(payment.referral_id, payment.amount);
         }
         
         // TODO: Update payment record to completed status
