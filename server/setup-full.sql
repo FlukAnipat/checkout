@@ -338,3 +338,70 @@ VALUES
   ('hsk1_008',1,'菜','cài','อาหาร','dish/vegetable','ဟင်းလျာ','这个菜很好吃。','audio/hsk1/菜.mp3',8),
   ('hsk1_009',1,'吃','chī','กิน','to eat','စားသည်','我想吃饭。','audio/hsk1/吃.mp3',9),
   ('hsk1_010',1,'车','chē','รถ','car/vehicle','ကား','这是我的车。','audio/hsk1/车.mp3',10);
+
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- FOREIGN KEY CONSTRAINTS
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- ตรวจสอบความสัมพันธ์ระหว่างตาราง
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- payments.user_id → users.user_id
+ALTER TABLE `payments` 
+  ADD CONSTRAINT `payments_user_id_fk` 
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+-- promo_codes.sales_person_id → users.user_id (NULL ได้)
+ALTER TABLE `promo_codes` 
+  ADD CONSTRAINT `promo_codes_sales_person_fk` 
+  FOREIGN KEY (`sales_person_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
+
+-- promo_code_usage.user_id → users.user_id
+ALTER TABLE `promo_code_usage` 
+  ADD CONSTRAINT `promo_usage_user_id_fk` 
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+-- promo_code_usage.promo_code → promo_codes.code
+ALTER TABLE `promo_code_usage` 
+  ADD CONSTRAINT `promo_usage_code_fk` 
+  FOREIGN KEY (`promo_code`) REFERENCES `promo_codes` (`code`) ON DELETE CASCADE;
+
+-- daily_goals.user_id → users.user_id
+ALTER TABLE `daily_goals` 
+  ADD CONSTRAINT `daily_goals_user_id_fk` 
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+-- learning_sessions.user_id → users.user_id
+ALTER TABLE `learning_sessions` 
+  ADD CONSTRAINT `learning_sessions_user_id_fk` 
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+-- user_settings.user_id → users.user_id
+ALTER TABLE `user_settings` 
+  ADD CONSTRAINT `user_settings_user_id_fk` 
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+-- user_word_status.user_id → users.user_id
+ALTER TABLE `user_word_status` 
+  ADD CONSTRAINT `user_word_status_user_id_fk` 
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+-- user_word_status.vocab_id → vocabulary.vocab_id
+ALTER TABLE `user_word_status` 
+  ADD CONSTRAINT `user_word_status_vocab_id_fk` 
+  FOREIGN KEY (`vocab_id`) REFERENCES `vocabulary` (`vocab_id`) ON DELETE CASCADE;
+
+-- user_achievements.user_id → users.user_id
+ALTER TABLE `user_achievements` 
+  ADD CONSTRAINT `user_achievements_user_id_fk` 
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+-- user_saved_words.user_id → users.user_id
+ALTER TABLE `user_saved_words` 
+  ADD CONSTRAINT `user_saved_words_user_id_fk` 
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+-- user_saved_words.vocab_id → vocabulary.vocab_id
+ALTER TABLE `user_saved_words` 
+  ADD CONSTRAINT `user_saved_words_vocab_id_fk` 
+  FOREIGN KEY (`vocab_id`) REFERENCES `vocabulary` (`vocab_id`) ON DELETE CASCADE;
