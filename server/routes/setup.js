@@ -1,5 +1,5 @@
 import express from 'express';
-import mysql from 'mysql2/promise';
+import pg from 'pg';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -11,20 +11,19 @@ const router = express.Router();
 // GET /api/setup - Create tables and import data (run once)
 router.get('/', async (req, res) => {
   try {
-    const pool = mysql.createPool({
+    const pool = new pg.Pool({
       host: process.env.DB_HOST,
       port: parseInt(process.env.DB_PORT),
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      multipleStatements: true,
       ssl: {
         rejectUnauthorized: false
       }
     });
 
-    console.log('Setup: Connecting to MySQL...');
-    const conn = await pool.getConnection();
+    console.log('Setup: Connecting to PostgreSQL...');
+    const conn = await pool.connect();
     console.log('Setup: Connected!');
 
     // Read and execute full SQL

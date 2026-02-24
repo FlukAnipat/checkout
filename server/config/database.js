@@ -3,7 +3,7 @@
  * MySQL via XAMPP for local development
  */
 
-import mysql from 'mysql2/promise';
+import pg from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -14,32 +14,28 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 🗄️ MySQL CONNECTION POOL
+// 🗄️ PostgreSQL CONNECTION POOL
 // ═══════════════════════════════════════════════════════════════════════════
 
-const pool = mysql.createPool({
+const pool = new pg.Pool({
   host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '3306'),
-  user: process.env.DB_USER || 'root',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'shwe_flash_db',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
+  database: process.env.DB_NAME || 'neondb',
   ssl: {
-    rejectUnauthorized: false,
-    minVersion: 'TLSv1.2'
+    rejectUnauthorized: false
   }
 });
 
 // Test connection on startup
 (async () => {
   try {
-    const conn = await pool.getConnection();
-    console.log('✅ Connected to MySQL database');
+    const conn = await pool.connect();
+    console.log('✅ Connected to PostgreSQL database');
     conn.release();
   } catch (err) {
-    console.error('❌ MySQL connection failed:', err.message);
+    console.error('❌ PostgreSQL connection failed:', err.message);
   }
 })();
 
