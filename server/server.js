@@ -58,10 +58,14 @@ let serverReady = false;
 
 const server = app.listen(PORT, () => {
   serverReady = true;
-  console.log(`\n🚀 Shwe Flash Payment Server running on http://localhost:${PORT}`);
-  console.log(`📡 API: http://localhost:${PORT}/api`);
-  console.log(`💳 Payment: http://localhost:${PORT}/api/payment`);
-  console.log(`🔐 Auth: http://localhost:${PORT}/api/auth`);
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? `https://checkout.up.railway.app` 
+    : `http://localhost:${PORT}`;
+  
+  console.log(`\n🚀 Shwe Flash Payment Server running on ${baseUrl}`);
+  console.log(`📡 API: ${baseUrl}/api`);
+  console.log(`💳 Payment: ${baseUrl}/api/payment`);
+  console.log(`🔐 Auth: ${baseUrl}/api/auth`);
   console.log(`✅ Server is ready and accepting connections\n`);
 });
 
