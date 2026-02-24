@@ -7,14 +7,14 @@ import SalesDashboard from './pages/SalesDashboard'
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('sf_token')
-  return token ? children : <Navigate to="/login" replace />
+  return token ? children : <Navigate to="#/login" replace />
 }
 
 function RoleRoute({ children, allowedRoles }) {
   const token = localStorage.getItem('sf_token')
-  if (!token) return <Navigate to="/login" replace />
+  if (!token) return <Navigate to="#/login" replace />
   const user = JSON.parse(localStorage.getItem('sf_user') || '{}')
-  if (!allowedRoles.includes(user.role)) return <Navigate to="/login" replace />
+  if (!allowedRoles.includes(user.role)) return <Navigate to="#/login" replace />
   return children
 }
 
@@ -55,7 +55,7 @@ export default function App() {
             </RoleRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="#/login" replace />} />
       </Routes>
     </HashRouter>
   )
