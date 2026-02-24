@@ -12,7 +12,8 @@ CREATE TABLE daily_goals (
   completed_cards INTEGER NOT NULL DEFAULT 0,
   is_completed BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, goal_date)
 );
 
 -- Create indexes
@@ -30,7 +31,8 @@ CREATE TABLE learning_sessions (
   minutes_spent INTEGER NOT NULL DEFAULT 0,
   hsk_level INTEGER,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, session_date)
 );
 
 -- Create indexes
@@ -44,8 +46,9 @@ CREATE TABLE payments (
   payment_id VARCHAR(100) PRIMARY KEY,
   user_id VARCHAR(100) NOT NULL,
   amount DECIMAL(10,2) NOT NULL,
-  currency VARCHAR(3) NOT NULL DEFAULT 'USD',
+  currency VARCHAR(3) NOT NULL DEFAULT 'MMK',
   payment_method VARCHAR(50) NOT NULL,
+  promo_code VARCHAR(50),
   payment_status VARCHAR(20) NOT NULL DEFAULT 'pending',
   transaction_id VARCHAR(100),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -77,26 +80,26 @@ CREATE TABLE promo_codes (
 CREATE TABLE user_achievements (
   id SERIAL PRIMARY KEY,
   user_id VARCHAR(100) NOT NULL,
-  achievement_type VARCHAR(50) NOT NULL,
-  achievement_value INTEGER NOT NULL,
-  description TEXT,
-  earned_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  achievement_key VARCHAR(50) NOT NULL,
+  unlocked_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, achievement_key)
 );
 
 -- Create indexes
 CREATE INDEX idx_user_achievements_user_id ON user_achievements(user_id);
-CREATE INDEX idx_user_achievements_type ON user_achievements(achievement_type);
+CREATE INDEX idx_user_achievements_key ON user_achievements(achievement_key);
 
 -- --------------------------------------------------------
 -- Table structure for table `user_settings`
 -- --------------------------------------------------------
 CREATE TABLE user_settings (
   user_id VARCHAR(100) PRIMARY KEY,
-  daily_goal INTEGER NOT NULL DEFAULT 10,
-  preferred_hsk_level INTEGER NOT NULL DEFAULT 1,
-  sound_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-  notifications_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-  theme VARCHAR(20) NOT NULL DEFAULT 'light',
+  app_language VARCHAR(10) NOT NULL DEFAULT 'en',
+  current_hsk_level INTEGER NOT NULL DEFAULT 1,
+  daily_goal_target INTEGER NOT NULL DEFAULT 10,
+  is_shuffle_mode BOOLEAN NOT NULL DEFAULT FALSE,
+  notification_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  reminder_time VARCHAR(10) DEFAULT '09:00',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -160,6 +163,20 @@ CREATE INDEX idx_vocabulary_hsk_level ON vocabulary(hsk_level);
 CREATE INDEX idx_vocabulary_sort_order ON vocabulary(sort_order);
 
 -- --------------------------------------------------------
+-- Table structure for table `user_saved_words`
+-- --------------------------------------------------------
+CREATE TABLE user_saved_words (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(100) NOT NULL,
+  vocab_id VARCHAR(50) NOT NULL,
+  saved_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, vocab_id)
+);
+
+-- Create indexes
+CREATE INDEX idx_user_saved_words_user_id ON user_saved_words(user_id);
+
+-- --------------------------------------------------------
 -- Insert sample data
 -- --------------------------------------------------------
 
@@ -197,7 +214,7 @@ INSERT INTO vocabulary (vocab_id, hsk_level, chinese, pinyin, thai, english, mya
 ('hsk1_020', 1, '在', 'zài', 'อยู่ที่', 'at/in/on', 'တွင်', '我在家。', 'audio/hsk1/在.mp3', 20);
 
 -- Insert demo user settings
-INSERT INTO user_settings (user_id, daily_goal, preferred_hsk_level) VALUES
-('demo_user_001', 10, 1);
+INSERT INTO user_settings (user_id, app_language, current_hsk_level, daily_goal_target) VALUES
+('demo_user_001', 'en', 1, 10);
 
 COMMIT;
