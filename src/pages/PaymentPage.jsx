@@ -100,11 +100,6 @@ export default function PaymentPage() {
   const [promoError, setPromoError] = useState('')
   const [promoDiscount, setPromoDiscount] = useState(0)
   const [promoSalesPerson, setPromoSalesPerson] = useState(null)
-  const [salesCode, setSalesCode] = useState('')
-  const [salesApplied, setSalesApplied] = useState(false)
-  const [salesError, setSalesError] = useState('')
-  const [salesPerson, setSalesPerson] = useState(null)
-  const [salesLoading, setSalesLoading] = useState(false)
   const [selectedMethod, setSelectedMethod] = useState('kbzpay')
   const [loading, setLoading] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
@@ -167,22 +162,7 @@ export default function PaymentPage() {
     }
   }
 
-  const handleAddSalesCode = async () => {
-    if (!salesCode.trim()) return
-    setSalesError('')
-    setSalesLoading(true)
-    try {
-      const res = await paymentAPI.validateSalesCode(salesCode)
-      setSalesApplied(true)
-      setSalesPerson(res.data.salesPerson)
-    } catch (err) {
-      setSalesError(err.response?.data?.error || 'Invalid sales code')
-      setSalesApplied(false)
-    } finally {
-      setSalesLoading(false)
-    }
-  }
-
+  
   const handleCheckout = async () => {
     setCheckoutLoading(true)
     try {
@@ -483,58 +463,7 @@ export default function PaymentPage() {
           )}
         </div>
 
-        {/* Sales Code */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4 animate-fade-in-delay">
-          <h3 className="font-bold text-gray-800 mb-3 text-sm flex items-center gap-2">
-            <Users className="w-4 h-4 text-gray-400" />
-            Sales Code
-            <span className="text-[10px] font-normal text-gray-300 ml-1">(optional)</span>
-          </h3>
-          <div className="flex gap-2">
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                value={salesCode}
-                onChange={(e) => {
-                  setSalesCode(e.target.value.toUpperCase())
-                  setSalesError('')
-                  if (salesApplied) { setSalesApplied(false); setSalesPerson(null) }
-                }}
-                placeholder="Enter sales code (e.g. TOM2026)"
-                disabled={salesApplied}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm font-medium disabled:bg-green-50 disabled:border-green-300 disabled:text-green-700"
-              />
-              {salesApplied && (
-                <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                  <CheckCircle2 size={16} className="text-green-500" />
-                </div>
-              )}
-            </div>
-            <button
-              onClick={handleAddSalesCode}
-              disabled={salesLoading || salesApplied || !salesCode.trim()}
-              className="px-5 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-            >
-              {salesLoading ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : salesApplied ? (
-                <CheckCircle2 size={16} className="text-green-400" />
-              ) : (
-                'Add'
-              )}
-            </button>
-          </div>
-          {salesError && (
-            <p className="text-xs text-red-500 mt-2 font-medium">{salesError}</p>
-          )}
-          {salesApplied && salesPerson && (
-            <p className="text-xs text-green-600 mt-2 font-medium flex items-center gap-1">
-              <CheckCircle2 size={12} />
-              Sales code added! Salesperson: {salesPerson.name}
-            </p>
-          )}
-        </div>
-
+        
         {/* Order Summary */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6 animate-fade-in-delay-2">
           <h3 className="font-bold text-gray-800 mb-3 text-sm">Order Summary</h3>

@@ -8,13 +8,7 @@ import {
   getPromoCode, 
   usePromoCode,
   checkPromoCodeUsage,
-  recordPromoCodeUsage,
-  getSalesCode,
-  checkUserHasSalesCode,
-  assignSalesCodeToUser,
-  createReferral,
-  completeReferralCommission,
-  useSalesCode
+  recordPromoCodeUsage
 } from '../config/database.js';
 import authMiddleware from '../middleware/auth.js';
 import { createMyanMyanPayPayment, verifyMyanMyanPayPayment } from '../services/myanpay.js';
@@ -126,69 +120,11 @@ router.post('/validate-promo', authMiddleware, async (req, res) => {
   }
 });
 
-/**
- * POST /api/payment/validate-sales-code
- * ตรวจสอบ sales code ว่ามีในฐานข้อมูลไหม + user ใส่ได้แค่ 1 ครั้ง
- */
-router.post('/validate-sales-code', authMiddleware, async (req, res) => {
-  const { salesCode } = req.body;
-
-  if (!salesCode || salesCode.trim().length === 0) {
-    return res.status(400).json({ error: 'Please enter a sales code' });
-  }
-
-  const code = salesCode.trim().toUpperCase();
-
-  try {
-    const user = await getUserByEmail(req.user.email);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // เช็คว่า user เคยใส่ sales code แล้วหรือยัง (1 ครั้งต่อ 1 user)
-    const existing = await checkUserHasSalesCode(user.user_id);
-    if (existing) {
-      return res.status(400).json({ 
-        error: 'You have already entered a sales code',
-        existingCode: existing.referred_by
-      });
-    }
-
-    // เช็คว่า sales code มีอยู่ในฐานข้อมูลไหม
-    const salesData = await getSalesCode(code);
-    if (!salesData) {
-      return res.status(400).json({ error: 'Invalid sales code' });
-    }
-
-    // ห้ามใส่ code ตัวเอง
-    if (salesData.user_id === user.user_id) {
-      return res.status(400).json({ error: 'You cannot use your own sales code' });
-    }
-
-    // บันทึก sales code ให้ user
-    const assigned = await assignSalesCodeToUser(user.user_id, code);
-    if (!assigned) {
-      return res.status(400).json({ error: 'Failed to assign sales code' });
-    }
-
-    res.json({
-      success: true,
-      message: `Sales code added! Salesperson: ${salesData.first_name} ${salesData.last_name}`,
-      salesPerson: {
-        name: `${salesData.first_name} ${salesData.last_name}`,
-        code: code,
-      },
-    });
-  } catch (err) {
-    console.error('Sales code validation error:', err);
-    res.status(500).json({ error: 'Failed to validate sales code' });
-  }
-});
 
 /**
  * POST /api/payment/checkout
  * ชำระเงิน (mock - ยังไม่ใช้ payment gateway จริง)
- * ถ้า user มี sales code → สร้าง referral record + คำนวณค่าคอม 20%
+ * ใช้เฉพาะ promo codes (salesperson info อยู่ใน promo codes แล้ว)
  */
 router.post('/checkout', authMiddleware, async (req, res) => {
   try {
@@ -226,16 +162,6 @@ router.post('/checkout', authMiddleware, async (req, res) => {
 
     const orderId = `SF-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // ── เช็ค sales code ของ user (ถ้ามี) → สร้าง referral + ค่าคอม ──
-    let referralId = null;
-    if (user.referred_by) {
-      const salesData = await getSalesCode(user.referred_by);
-      if (salesData && salesData.user_id !== user.user_id) {
-        referralId = await createReferral(salesData.user_id, user.user_id, user.referred_by);
-        await useSalesCode(user.referred_by);
-      }
-    }
-
     // ── Mock Payment (ยังไม่ใช้ payment gateway จริง) ──
     const payment = {
       paymentId: uuidv4(),
@@ -245,7 +171,6 @@ router.post('/checkout', authMiddleware, async (req, res) => {
       amount: finalPrice,
       currency: PRICING.currency,
       promoCode: code,
-      referralId: referralId ? String(referralId) : null,
       paymentMethod: paymentMethod || 'card',
       status: 'completed',
     };
@@ -264,12 +189,6 @@ router.post('/checkout', authMiddleware, async (req, res) => {
       promoCodeUsed: code,
       paidAt: new Date().toISOString(),
     });
-
-    // คำนวณค่าคอม 20% ให้เซล
-    if (referralId) {
-      const commission = await completeReferralCommission(referralId, finalPrice);
-      console.log(`💰 Commission ${commission} MMK for referral #${referralId}`);
-    }
 
     res.json({
       success: true,
@@ -434,11 +353,7 @@ router.post('/webhook/myanpay', async (req, res) => {
           await usePromoCode(payment.promo_code);
         }
         
-        // Create referral commission if applicable
-        if (payment.referral_id) {
-          await completeReferralCommission(payment.referral_id, payment.amount);
-        }
-        
+                
         // TODO: Update payment record to completed status
         console.log(`Payment completed for order: ${orderId}`);
       }
