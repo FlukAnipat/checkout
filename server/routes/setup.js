@@ -26,8 +26,8 @@ router.get('/', async (req, res) => {
     const conn = await pool.connect();
     console.log('Setup: Connected!');
 
-    // Read and execute full SQL
-    const sqlPath = path.join(__dirname, '..', 'setup-full.sql');
+    // Read and execute PostgreSQL SQL
+    const sqlPath = path.join(__dirname, '..', 'setup-postgres.sql');
     const sql = fs.readFileSync(sqlPath, 'utf8');
     
     console.log('Setup: Creating schema and inserting data...');
@@ -35,14 +35,14 @@ router.get('/', async (req, res) => {
     console.log('Setup: Database setup completed!');
 
     // Verify tables
-    const [tables] = await conn.query('SHOW TABLES');
-    const tableNames = tables.map(t => Object.values(t)[0]);
+    const { rows: tables } = await conn.query('SELECT table_name FROM information_schema.tables WHERE table_schema = \'public\'');
+    const tableNames = tables.map(t => t.table_name);
 
     // Count rows
     const counts = {};
     for (const name of tableNames) {
-      const [rows] = await conn.query(`SELECT COUNT(*) as c FROM \`${name}\``);
-      counts[name] = rows[0].c;
+      const { rows } = await conn.query(`SELECT COUNT(*) as c FROM "${name}"`);
+      counts[name] = parseInt(rows[0].c);
     }
 
     conn.release();
