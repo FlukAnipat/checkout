@@ -11,6 +11,17 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // Clear error when user starts typing
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value)
+    if (error) setError('')
+  }
+
+  const handlePasswordChange = (e) => {
+    setPassword(e.target.value)
+    if (error) setError('')
+  }
+
   const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
@@ -34,7 +45,25 @@ export default function LoginPage() {
         navigate('/payment')
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed. Please try again.')
+      console.error('Login error:', err)
+      
+      // Handle different types of errors
+      let errorMessage = 'Login failed. Please try again.'
+      
+      if (err.response) {
+        // Server responded with error status (4xx, 5xx)
+        errorMessage = err.response.data?.error || 
+                      err.response.data?.message || 
+                      `Server error: ${err.response.status}`
+      } else if (err.request) {
+        // Network error (no response received)
+        errorMessage = 'Network error. Please check your connection and try again.'
+      } else {
+        // Other errors (request setup, etc.)
+        errorMessage = err.message || 'An unexpected error occurred. Please try again.'
+      }
+      
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -66,9 +95,15 @@ export default function LoginPage() {
           </p>
 
           {error && (
-            <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm font-medium flex items-center gap-2">
-              <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-red-500" />
-              {error}
+            <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-start gap-3 animate-fade-in">
+              <div className="shrink-0 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center mt-0.5">
+                <span className="text-red-600 text-xs font-bold">!</span>
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-red-800">Login Failed</p>
+                <p className="text-red-600 mt-1">{error}</p>
+                <p className="text-red-500 text-xs mt-2">Please check your email and password, then try again.</p>
+              </div>
             </div>
           )}
 
@@ -81,7 +116,7 @@ export default function LoginPage() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={handleEmailChange}
                 placeholder="you@example.com"
                 required
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all text-gray-800 placeholder-gray-300 text-sm"
@@ -97,7 +132,7 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handlePasswordChange}
                   placeholder="Enter your password"
                   required
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all text-gray-800 placeholder-gray-300 pr-12 text-sm"
