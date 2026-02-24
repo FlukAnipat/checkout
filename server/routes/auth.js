@@ -30,7 +30,7 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { userId: user.user_id, email: user.email },
+      { userId: user.user_id, email: user.email, role: user.role || 'user' },
       process.env.JWT_SECRET || 'shwe_flash_secret_key_change_in_production_2024',
       { expiresIn: '7d' }
     );
@@ -45,6 +45,7 @@ router.post('/login', async (req, res) => {
         lastName: user.last_name,
         phone: user.phone,
         countryCode: user.country_code,
+        role: user.role || 'user',
         isPaid: !!user.is_paid,
         is_paid: user.is_paid ? 1 : 0,
         paidAt: user.paid_at,
@@ -63,7 +64,7 @@ router.post('/login', async (req, res) => {
  */
 router.post('/register', async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, countryCode, password } = req.body;
+    const { firstName, lastName, email, phone, countryCode, password, role } = req.body;
 
     if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({ error: 'All fields are required' });
@@ -92,6 +93,7 @@ router.post('/register', async (req, res) => {
       phone: (phone || '').trim(),
       countryCode: countryCode || '+95',
       password: hashedPassword,
+      role: role || 'user',
       isPaid: false,
       promoCodeUsed: null,
       paidAt: null,
@@ -102,7 +104,7 @@ router.post('/register', async (req, res) => {
 
     // Generate JWT
     const token = jwt.sign(
-      { userId: user.userId, email: user.email },
+      { userId: user.userId, email: user.email, role: user.role },
       process.env.JWT_SECRET || 'shwe_flash_secret_key_change_in_production_2024',
       { expiresIn: '24h' }
     );

@@ -1,12 +1,10 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- 🎯 SHWE FLASH CHECKOUT DATABASE - COMPLETE SCHEMA
+-- 🎯 SHWE FLASH CHECKOUT DATABASE - COMPLETE SCHEMA (FIXED)
 -- ระบบชำระเงิน + Promo Codes + Salesperson Tracking
 -- ═══════════════════════════════════════════════════════════════════════════
 
--- ลบฐานข้อมูลเก่าถ้ามี (สำหรับ dev)
--- DROP DATABASE IF EXISTS railway;
--- CREATE DATABASE railway CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
--- USE railway;
+-- ใช้ฐานข้อมูล railway (Railway MySQL default database)
+USE railway;
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- 👤 USERS TABLE - ข้อมูลผู้ใช้
@@ -19,15 +17,17 @@ CREATE TABLE `users` (
   `last_name` varchar(100) NOT NULL,
   `phone` varchar(20) NOT NULL,
   `country_code` varchar(10) NOT NULL DEFAULT '+95',
-  `referral_code` varchar(20) DEFAULT NULL,           -- referral code ของตัวเอง (ถ้ามี)
-  `referred_by` varchar(100) DEFAULT NULL,           -- ใครแนะนำมา (ถ้ามี)
+  `role` enum('user','sales','admin') NOT NULL DEFAULT 'user',  -- บทบาท
+  `referral_code` varchar(20) DEFAULT NULL,
+  `referred_by` varchar(100) DEFAULT NULL,
   `is_paid` tinyint(1) NOT NULL DEFAULT 0,
-  `promo_code_used` varchar(50) DEFAULT NULL,        -- promo code ที่ใช้
+  `promo_code_used` varchar(50) DEFAULT NULL,
   `paid_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `unique_email` (`email`),
+  KEY `idx_role` (`role`),
   KEY `idx_referral_code` (`referral_code`),
   KEY `idx_referred_by` (`referred_by`),
   KEY `idx_is_paid` (`is_paid`)
@@ -136,16 +136,17 @@ CREATE TABLE `learning_sessions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- 📝 SAMPLE DATA - ข้อมูลตัวอย่าง
+-- 📝 SAMPLE DATA - ข้อมูลตัวอย่าง (FIXED COLUMN COUNT)
 -- ═══════════════════════════════════════════════════════════════════════════
 
--- 👤 Sample Users (เซล + ลูกค้า)
-INSERT INTO `users` VALUES 
-('admin-user-001','admin@shweflash.com','$2a$10$RNmtcZRnv0cCqOTY2zdQYeLmzrVmJlDIHy/kzLXN5VoPhPSRIFnwe','Admin','User','0912345678','+95','FLASH2024',NULL,1,NULL,'2026-02-24 18:54:24','2026-02-25 04:00:00'),
-('tom-user-001','tom@shweflash.com','$2a$10$B59nw3dGtqMGxK0NdWzEXeUvx1LQoR0u1eiApYzTe3WzFhRA38Ziy','Tom','Sales','0987654321','+95','TOM2026',NULL,1,NULL,'2026-02-24 18:54:24','2026-02-25 04:00:00'),
-('mary-user-001','mary@shweflash.com','$2a$10$B59nw3dGtqMGxK0NdWzEXeUvx1LQoR0u1eiApYzTe3WzFhRA38Ziy','Mary','Sales','0911122233','+95','MARY2026',NULL,0,NULL,'2026-02-24 18:54:24','2026-02-25 04:00:00'),
-('john-user-001','john@example.com','$2a$10$RNmtcZRnv0cCqOTY2zdQYeLmzrVmJlDIHy/kzLXN5VoPhPSRIFnwe','John','Customer','0998877665','+95',NULL,NULL,0,NULL,'2026-02-24 18:54:24','2026-02-25 04:00:00'),
-('jane-user-001','jane@example.com','$2a$10$RNmtcZRnv0cCqOTY2zdQYeLmzrVmJlDIHy/kzLXN5VoPhPSRIFnwe','Jane','Customer','0955544433','+95',NULL,NULL,0,NULL,'2026-02-24 18:54:24','2026-02-25 04:00:00');
+-- 👤 Sample Users (เซล + ลูกค้า) - ตรวจสอบจำนวนคอลัมน์ให้ตรงกัน
+-- password: admin123, password123
+INSERT INTO `users` (`user_id`,`email`,`password`,`first_name`,`last_name`,`phone`,`country_code`,`role`,`referral_code`,`referred_by`,`is_paid`,`promo_code_used`,`paid_at`,`created_at`,`updated_at`) VALUES 
+('admin-user-001','admin@gmail.com','$2a$10$RNmtcZRnv0cCqOTY2zdQYeLmzrVmJlDIHy/kzLXN5VoPhPSRIFnwe','Admin','User','0912345678','+95','admin','FLASH2024',NULL,1,NULL,NULL,'2026-02-24 18:54:24','2026-02-25 04:00:00'),
+('tom-user-001','tom@shweflash.com','$2a$10$B59nw3dGtqMGxK0NdWzEXeUvx1LQoR0u1eiApYzTe3WzFhRA38Ziy','Tom','Sales','0987654321','+95','sales','TOM2026',NULL,1,NULL,NULL,'2026-02-24 18:54:24','2026-02-25 04:00:00'),
+('mary-user-001','mary@shweflash.com','$2a$10$B59nw3dGtqMGxK0NdWzEXeUvx1LQoR0u1eiApYzTe3WzFhRA38Ziy','Mary','Sales','0911122233','+95','sales','MARY2026',NULL,0,NULL,NULL,'2026-02-24 18:54:24','2026-02-25 04:00:00'),
+('john-user-001','john@example.com','$2a$10$B59nw3dGtqMGxK0NdWzEXeUvx1LQoR0u1eiApYzTe3WzFhRA38Ziy','John','Customer','0998877665','+95','user',NULL,NULL,0,NULL,NULL,'2026-02-24 18:54:24','2026-02-25 04:00:00'),
+('jane-user-001','jane@example.com','$2a$10$B59nw3dGtqMGxK0NdWzEXeUvx1LQoR0u1eiApYzTe3WzFhRA38Ziy','Jane','Customer','0955544433','+95','user',NULL,NULL,0,NULL,NULL,'2026-02-24 18:54:24','2026-02-25 04:00:00');
 
 -- 🎫 Sample Promo Codes (เชื่อมโยงกับเซล)
 INSERT INTO `promo_codes` VALUES 
@@ -224,28 +225,9 @@ WHERE u.user_id IN ('admin-user-001', 'tom-user-001', 'mary-user-001')
 GROUP BY u.user_id, u.first_name, u.last_name
 ORDER BY total_revenue DESC;
 
--- ดู promo code usage ทั้งหมด
-SELECT 
-  pcu.promo_code,
-  pc.discount_percent,
-  CONCAT(u.first_name, ' ', u.last_name) as salesperson_name,
-  COUNT(pcu.user_id) as times_used,
-  SUM(pcu.discount_amount) as total_discount_given
-FROM `promo_code_usage` pcu
-JOIN `promo_codes` pc ON pcu.promo_code = pc.code
-LEFT JOIN `users` u ON pc.sales_person_id = u.user_id
-GROUP BY pcu.promo_code, pc.discount_percent, u.first_name, u.last_name
-ORDER BY times_used DESC;
-
 -- ═══════════════════════════════════════════════════════════════════════════
 -- 📋 SYSTEM SUMMARY
 -- ═══════════════════════════════════════════════════════════════════════════
--- ✅ Users: 5 (3 salespersons, 2 customers)
--- ✅ Promo Codes: 8 (5 with salesperson, 3 general)
--- ✅ Payments: 3 (2 with promo codes, 1 full price)
--- ✅ Vocabulary: 5 (HSK 1 sample)
--- ✅ Sales Tracking: Complete (promo → salesperson → revenue)
-
 SELECT 'DATABASE SETUP COMPLETE' as status,
        NOW() as setup_time,
        (SELECT COUNT(*) FROM users) as total_users,

@@ -135,8 +135,8 @@ export async function createUser(userData) {
   const sql = `
     INSERT INTO users (
       user_id, email, password, first_name, last_name,
-      phone, country_code, is_paid, promo_code_used, paid_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      phone, country_code, role, is_paid, promo_code_used, paid_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
   const params = [
     userData.userId,
@@ -146,6 +146,7 @@ export async function createUser(userData) {
     userData.lastName,
     userData.phone,
     userData.countryCode || '+95',
+    userData.role || 'user',
     userData.isPaid ? 1 : 0,
     userData.promoCodeUsed || null,
     userData.paidAt || null
@@ -225,6 +226,14 @@ export async function getPaymentsByUserId(userId) {
 // ═══════════════════════════════════════════════════════════════════════════
 // 🏷️ PROMO CODE OPERATIONS
 // ═══════════════════════════════════════════════════════════════════════════
+
+export async function getSalesPersonByUserId(userId) {
+  const [rows] = await pool.execute(
+    'SELECT first_name, last_name FROM users WHERE user_id = ?',
+    [userId]
+  );
+  return rows[0] || null;
+}
 
 export async function getPromoCode(code) {
   const [rows] = await pool.execute(
@@ -482,6 +491,151 @@ export async function unlockAchievement(userId, achievementKey) {
      VALUES (?, ?, NOW())`,
     [userId, achievementKey]
   );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 📊 ADMIN OPERATIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function getAllUsers() {
+  const [rows] = await pool.execute(
+    `SELECT user_id, email, first_name, last_name, phone, country_code, role, 
+            referral_code, referred_by, is_paid, promo_code_used, paid_at, created_at
+     FROM users ORDER BY created_at DESC`
+  );
+  return rows;
+}
+
+export async function getAllPayments() {
+  const [rows] = await pool.execute(
+    `SELECT p.*, CONCAT(u.first_name, ' ', u.last_name) as customer_name, u.email as customer_email
+     FROM payments p
+     JOIN users u ON p.user_id = u.user_id
+     ORDER BY p.created_at DESC`
+  );
+  return rows;
+}
+
+export async function getAllPromoCodes() {
+  const [rows] = await pool.execute(
+    `SELECT pc.*, CONCAT(u.first_name, ' ', u.last_name) as sales_person_name
+     FROM promo_codes pc
+     LEFT JOIN users u ON pc.sales_person_id = u.user_id
+     ORDER BY pc.created_at DESC`
+  );
+  return rows;
+}
+
+export async function createPromoCode(data) {
+  const sql = `
+    INSERT INTO promo_codes (code, discount_percent, max_uses, sales_person_id, expires_at)
+    VALUES (?, ?, ?, ?, ?)
+  `;
+  await pool.execute(sql, [
+    data.code.toUpperCase().trim(),
+    data.discountPercent,
+    data.maxUses || 100,
+    data.salesPersonId || null,
+    data.expiresAt || null
+  ]);
+}
+
+export async function getAdminDashboardStats() {
+  const [userStats] = await pool.execute(
+    `SELECT 
+       COUNT(*) as total_users,
+       SUM(CASE WHEN role = 'sales' THEN 1 ELSE 0 END) as total_sales_persons,
+       SUM(CASE WHEN is_paid = 1 THEN 1 ELSE 0 END) as total_paid_users
+     FROM users`
+  );
+  const [paymentStats] = await pool.execute(
+    `SELECT 
+       COUNT(*) as total_payments,
+       COALESCE(SUM(amount), 0) as total_revenue
+     FROM payments WHERE status = 'completed'`
+  );
+  const [promoStats] = await pool.execute(
+    `SELECT COUNT(*) as total_promo_codes, SUM(used_count) as total_promo_used FROM promo_codes`
+  );
+  return {
+    ...userStats[0],
+    ...paymentStats[0],
+    ...promoStats[0]
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 💼 SALES OPERATIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function getSalesPromoCodes(salesPersonId) {
+  const [rows] = await pool.execute(
+    `SELECT pc.*,
+       (SELECT COUNT(*) FROM promo_code_usage pcu WHERE pcu.promo_code = pc.code) as times_used,
+       (SELECT COALESCE(SUM(pcu.discount_amount), 0) FROM promo_code_usage pcu WHERE pcu.promo_code = pc.code) as total_discount_given
+     FROM promo_codes pc
+     WHERE pc.sales_person_id = ?
+     ORDER BY pc.created_at DESC`,
+    [salesPersonId]
+  );
+  return rows;
+}
+
+export async function getSalesDashboardStats(salesPersonId) {
+  const COMMISSION_RATE = 0.20;
+  const [promoRows] = await pool.execute(
+    `SELECT pc.code FROM promo_codes WHERE sales_person_id = ?`,
+    [salesPersonId]
+  );
+  
+  if (promoRows.length === 0) {
+    return { totalSales: 0, totalRevenue: 0, totalCommission: 0, promoCodes: 0, uniqueCustomers: 0 };
+  }
+  
+  const codes = promoRows.map(r => r.code);
+  const placeholders = codes.map(() => '?').join(',');
+  
+  const [salesStats] = await pool.execute(
+    `SELECT 
+       COUNT(*) as total_sales,
+       COALESCE(SUM(p.amount), 0) as total_revenue,
+       COUNT(DISTINCT p.user_id) as unique_customers
+     FROM payments p
+     WHERE p.promo_code IN (${placeholders}) AND p.status = 'completed'`,
+    codes
+  );
+  
+  return {
+    totalSales: salesStats[0].total_sales,
+    totalRevenue: Number(salesStats[0].total_revenue),
+    totalCommission: Number(salesStats[0].total_revenue) * COMMISSION_RATE,
+    commissionRate: COMMISSION_RATE * 100,
+    promoCodes: codes.length,
+    uniqueCustomers: salesStats[0].unique_customers
+  };
+}
+
+export async function getSalesCustomers(salesPersonId) {
+  const [promoRows] = await pool.execute(
+    `SELECT code FROM promo_codes WHERE sales_person_id = ?`,
+    [salesPersonId]
+  );
+  
+  if (promoRows.length === 0) return [];
+  
+  const codes = promoRows.map(r => r.code);
+  const placeholders = codes.map(() => '?').join(',');
+  
+  const [rows] = await pool.execute(
+    `SELECT p.payment_id, p.amount, p.currency, p.promo_code, p.status, p.created_at,
+            CONCAT(u.first_name, ' ', u.last_name) as customer_name, u.email as customer_email
+     FROM payments p
+     JOIN users u ON p.user_id = u.user_id
+     WHERE p.promo_code IN (${placeholders}) AND p.status = 'completed'
+     ORDER BY p.created_at DESC`,
+    codes
+  );
+  return rows;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

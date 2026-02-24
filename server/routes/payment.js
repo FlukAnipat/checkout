@@ -8,7 +8,8 @@ import {
   getPromoCode, 
   usePromoCode,
   checkPromoCodeUsage,
-  recordPromoCodeUsage
+  recordPromoCodeUsage,
+  getSalesPersonByUserId
 } from '../config/database.js';
 import authMiddleware from '../middleware/auth.js';
 import { createMyanMyanPayPayment, verifyMyanMyanPayPayment } from '../services/myanpay.js';
@@ -94,12 +95,9 @@ router.post('/validate-promo', authMiddleware, async (req, res) => {
     // ตรวจสอบว่า promo code มีข้อมูลเซลหรือไม่
     let salesPerson = null;
     if (promo.sales_person_id) {
-      const [salesUser] = await pool.execute(
-        'SELECT first_name, last_name FROM users WHERE user_id = ?',
-        [promo.sales_person_id]
-      );
-      if (salesUser.length > 0) {
-        salesPerson = `${salesUser[0].first_name} ${salesUser[0].last_name}`;
+      const salesUser = await getSalesPersonByUserId(promo.sales_person_id);
+      if (salesUser) {
+        salesPerson = `${salesUser.first_name} ${salesUser.last_name}`;
       }
     }
 

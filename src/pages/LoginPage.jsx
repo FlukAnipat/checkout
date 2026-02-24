@@ -23,7 +23,12 @@ export default function LoginPage() {
       localStorage.setItem('sf_token', token)
       localStorage.setItem('sf_user', JSON.stringify(user))
 
-      if (user.isPaid) {
+      // Redirect ตาม role
+      if (user.role === 'admin') {
+        navigate('/admin')
+      } else if (user.role === 'sales') {
+        navigate('/sales')
+      } else if (user.isPaid) {
         navigate('/success')
       } else {
         navigate('/payment')

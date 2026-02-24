@@ -69,4 +69,20 @@ export const paymentAPI = {
     api.get('/payment/history'),
 };
 
+// ── Admin API ──
+export const adminAPI = {
+  getDashboard: () => api.get('/admin/dashboard'),
+  getUsers: () => api.get('/admin/users'),
+  getPayments: () => api.get('/admin/payments'),
+  getPromoCodes: () => api.get('/admin/promo-codes'),
+  createPromoCode: (data) => api.post('/admin/promo-codes', data),
+};
+
+// ── Sales API ──
+export const salesAPI = {
+  getDashboard: () => api.get('/sales/dashboard'),
+  getPromoCodes: () => api.get('/sales/promo-codes'),
+  getCustomers: () => api.get('/sales/customers'),
+};
+
 export default api;
