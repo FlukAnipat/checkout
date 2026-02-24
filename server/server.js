@@ -15,6 +15,7 @@ import paymentRoutes from './routes/payment.js';
 import vocabRoutes from './routes/vocabulary.js';
 import setupRoutes from './routes/setup.js';
 import flutterAuthRoutes from './routes/flutter-auth.js';
+import referralRoutes from './routes/referral.js';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -32,6 +33,7 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/vocab', vocabRoutes);
 app.use('/api/setup', setupRoutes);
 app.use('/api/auth', flutterAuthRoutes);
+app.use('/api/referral', referralRoutes);
 
 // ── Health check ──
 app.get('/api/health', (req, res) => {

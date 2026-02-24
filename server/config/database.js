@@ -326,6 +326,101 @@ export async function updateReferredBy(userId, referralCode) {
   return false;
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// 🎯 REFERRAL CODE GENERATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function generateReferralCode(userId) {
+  // สุ่มแบบสุ่ม: FLASH + 6 ตัวอักษร + 3 ตัวเลข
+  const prefix = 'FLASH';
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = prefix;
+  
+  // เพิ่ม 6 ตัวอักษร
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  
+  // เพิ่ม 3 ตัวเลข
+  code += Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  
+  return code;
+}
+
+export async function createReferralCodeForUser(userId) {
+  try {
+    // ตรวจสอบว่ามี referral code อยู่แล้ว
+    const [existingUser] = await pool.execute(
+      'SELECT referral_code FROM users WHERE user_id = ? AND referral_code IS NOT NULL',
+      [userId]
+    );
+    
+    if (existingUser.length > 0) {
+      return existingUser[0].referral_code;
+    }
+    
+    // สร้าง referral code ใหม่
+    const newCode = await generateReferralCode(userId);
+    
+    // ตรวจสอบว่า code ซ้ำในระบบ
+    const [existingCode] = await pool.execute(
+      'SELECT code FROM referral_codes WHERE code = ?',
+      [newCode]
+    );
+    
+    if (existingCode.length > 0) {
+      // ถ้าซ้ำ สร้างใหม่
+      return await createReferralCodeForUser(userId);
+    }
+    
+    // บันทึก referral code
+    await pool.execute(
+      'INSERT INTO referral_codes (code, user_id, max_uses, is_active) VALUES (?, ?, 100, 1)',
+      [newCode, userId]
+    );
+    
+    // อัปเดต user table
+    await pool.execute(
+      'UPDATE users SET referral_code = ? WHERE user_id = ?',
+      [newCode, userId]
+    );
+    
+    return newCode;
+  } catch (error) {
+    console.error('Error creating referral code:', error);
+    throw error;
+  }
+}
+
+export async function checkReferralCodeExists(code) {
+  try {
+    const [result] = await pool.execute(
+      'SELECT code FROM referral_codes WHERE code = ? AND is_active = 1',
+      [code.toUpperCase().trim()]
+    );
+    return result.length > 0;
+  } catch (error) {
+    console.error('Error checking referral code:', error);
+    return false;
+  }
+}
+
+export async function getReferralCodeInfo(code) {
+  try {
+    const [result] = await pool.execute(
+      `SELECT rc.*, u.first_name, u.last_name, u.email 
+       FROM referral_codes rc 
+       JOIN users u ON rc.user_id = u.user_id 
+       WHERE rc.code = ? AND rc.is_active = 1`,
+      [code.toUpperCase().trim()]
+    );
+    return result[0] || null;
+  } catch (error) {
+    console.error('Error getting referral code info:', error);
+    return null;
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // 📚 VOCABULARY OPERATIONS
 // ═══════════════════════════════════════════════════════════════════════════
