@@ -41,12 +41,12 @@ router.get('/', async (req, res) => {
 
     console.log('Setup: Connected to MySQL!');
 
-    // Read and execute MySQL SQL
-    const sqlPath = path.join(__dirname, '..', 'setup-full.sql');
-    const sql = fs.readFileSync(sqlPath, 'utf8');
+    // Read the complete SQL setup file with sell002 and paid test user
+    const setupPath = path.join(__dirname, '..', 'setup-with-sell002.sql');
+    const sqlScript = fs.readFileSync(setupPath, 'utf8');
     
     console.log('Setup: Creating schema and inserting data...');
-    await conn.query(sql);
+    await conn.query(sqlScript);
     console.log('Setup: Database setup completed!');
 
     // Verify tables
