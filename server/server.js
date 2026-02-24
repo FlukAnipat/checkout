@@ -13,6 +13,7 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 import authRoutes from './routes/auth.js';
 import paymentRoutes from './routes/payment.js';
 import vocabRoutes from './routes/vocabulary.js';
+import setupRoutes from './routes/setup.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -28,6 +29,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/vocab', vocabRoutes);
+app.use('/api/setup', setupRoutes);
 
 // ── Health check ──
 app.get('/api/health', (req, res) => {
