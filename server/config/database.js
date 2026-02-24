@@ -500,7 +500,7 @@ export async function unlockAchievement(userId, achievementKey) {
 export async function getAllUsers() {
   const [rows] = await pool.execute(
     `SELECT user_id, email, first_name, last_name, phone, country_code, role, 
-            referral_code, referred_by, is_paid, promo_code_used, paid_at, created_at
+            is_paid, promo_code_used, paid_at, created_at, updated_at
      FROM users ORDER BY created_at DESC`
   );
   return rows;
