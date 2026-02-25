@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 import PaymentPage from './pages/PaymentPage'
 import SuccessPage from './pages/SuccessPage'
 import AdminDashboard from './pages/AdminDashboard'
@@ -23,6 +24,7 @@ export default function App() {
     <HashRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route
           path="/payment"
           element={

@@ -60,11 +60,11 @@ router.post('/login', async (req, res) => {
 
 /**
  * POST /api/auth/register
- * Register new user (for testing — in production users register via Flutter app)
+ * Register new sales person (web only - users register via Flutter app)
  */
 router.post('/register', async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, countryCode, password, role } = req.body;
+    const { firstName, lastName, email, phone, countryCode, password } = req.body;
 
     if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({ error: 'All fields are required' });
@@ -80,6 +80,9 @@ router.post('/register', async (req, res) => {
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
+
+    // Only allow sales registration via web
+    const role = 'sales';
 
     // Hash password with bcrypt
     const salt = await bcrypt.genSalt(10);

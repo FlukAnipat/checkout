@@ -180,12 +180,20 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* Register Link */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-400">
+            Want to become a sales person?{' '}
+            <a href="#/register" className="text-primary-500 font-semibold hover:text-primary-600 transition-colors">
+              Register here
+            </a>
+          </p>
+        </div>
+
         {/* Footer */}
         <div className="text-center mt-6 space-y-2">
           <p className="text-xs text-gray-400">
-            Don't have an account? Download{' '}
-            <span className="font-semibold text-primary-500">HSK Shwe Flash</span>{' '}
-            app to register.
+            Regular users register via the HSK Shwe Flash mobile app.
           </p>
           <p className="text-xs text-gray-300">
             &copy; {new Date().getFullYear()} HSK Shwe Flash. All rights reserved.
