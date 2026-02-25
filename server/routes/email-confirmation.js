@@ -166,12 +166,20 @@ router.post('/send-confirmation', async (req, res) => {
       console.log('🔧 Debug: Email send result:', result);
       console.log(`📧 Email sent successfully to ${normalizedEmail}`);
     } catch (emailError) {
-      console.error('🔧 Debug: Email sending error:', emailError);
-      console.error('🔧 Debug: Error details:', {
+      console.error('❌ Email sending failed:', emailError.message);
+      console.error('🔧 Full error:', {
         message: emailError.message,
         code: emailError.code,
-        status: emailError.status,
+        statusCode: emailError.statusCode,
+        response: emailError.response?.data,
         stack: emailError.stack
+      });
+      
+      // Return error to user
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send confirmation email',
+        error: emailError.message
       });
       // Fallback to mock for development
       console.log(`📧 Confirmation link for ${normalizedEmail}: ${confirmationLink}`);
