@@ -47,6 +47,11 @@ app.use('/api/approval', approvalRoutes);
 app.use('/api/otp', otpRoutes);
 app.use('/api/email-confirmation', emailConfirmationRoutes);
 
+// ── Simple ping (no database) ──
+app.get('/api/ping', (req, res) => {
+  res.json({ pong: true, timestamp: new Date().toISOString() });
+});
+
 // ── Health check ──
 app.get('/api/health', async (req, res) => {
   try {

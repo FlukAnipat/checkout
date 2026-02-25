@@ -1,9 +1,6 @@
 // API Configuration
-// Production: Railway backend
-// Development: Local backend
+// Vercel: same domain, /api routes handled by api/index.js
+// Development: local backend
 
-export const API_BASE = 'https://checkout-backend.vercel.app/api';
+export const API_BASE = '/api';
 export const BASE_URL = 'https://hsk-shwe-flash.vercel.app';
-
-// Force cache busting
-console.log('🔧 API_BASE updated to:', API_BASE);
