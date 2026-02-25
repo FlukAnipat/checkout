@@ -25,26 +25,9 @@
 -- ║    user_settings, user_word_status, user_achievements, user_saved_words     ║
 -- ╚═══════════════════════════════════════════════════════════════════════════════╝
 
+USE railway;
 
 SET FOREIGN_KEY_CHECKS = 0;
-
--- ลบตารางเก่าที่ไม่ใช้
-DROP TABLE IF EXISTS `referral_codes`;
-DROP TABLE IF EXISTS `referrals`;
-
--- ลบตารางทั้งหมด สร้างใหม่
-DROP TABLE IF EXISTS `promo_code_usage`;
-DROP TABLE IF EXISTS `payments`;
-DROP TABLE IF EXISTS `promo_codes`;
-DROP TABLE IF EXISTS `daily_goals`;
-DROP TABLE IF EXISTS `learning_sessions`;
-DROP TABLE IF EXISTS `user_achievements`;
-DROP TABLE IF EXISTS `user_saved_words`;
-DROP TABLE IF EXISTS `user_settings`;
-DROP TABLE IF EXISTS `user_word_status`;
-DROP TABLE IF EXISTS `vocabulary`;
-DROP TABLE IF EXISTS `users`;
-
 SET FOREIGN_KEY_CHECKS = 1;
 
 
