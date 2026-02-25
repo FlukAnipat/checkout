@@ -5,6 +5,7 @@ import PaymentPage from './pages/PaymentPage'
 import SuccessPage from './pages/SuccessPage'
 import AdminDashboard from './pages/AdminDashboard'
 import SalesDashboard from './pages/SalesDashboard'
+import ConfirmEmailPage from './pages/ConfirmEmailPage'
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('sf_token')
@@ -70,6 +71,7 @@ export default function App() {
           }
         />
         <Route path="/register/:token" element={<RegisterPage />} />
+        <Route path="/confirm-email" element={<ConfirmEmailPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </HashRouter>

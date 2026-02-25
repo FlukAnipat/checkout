@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { authAPI } from '../services/api'
 import CountryPhoneInput from '../components/CountryPhoneInput.jsx'
-import OTPVerification from '../components/OTPVerification.jsx'
-import EmailVerification from '../components/EmailVerification.jsx'
-import { Eye, EyeOff, UserPlus, Shield, Lock, Building } from 'lucide-react'
+import EmailConfirmation from '../components/EmailConfirmation.jsx'
+import { Eye, EyeOff, UserPlus, Shield, Lock, Building, Mail } from 'lucide-react'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -26,11 +25,8 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [showOTP, setShowOTP] = useState(false)
-  const [otpVerified, setOtpVerified] = useState(false)
-  const [showEmailOTP, setShowEmailOTP] = useState(false)
   const [emailVerified, setEmailVerified] = useState(false)
-  const [verificationStep, setVerificationStep] = useState('phone') // 'phone' | 'email' | 'register'
+  const [step, setStep] = useState('form') // 'form' | 'email' | 'password'
 
   // Validate registration token
   useEffect(() => {
@@ -39,12 +35,9 @@ export default function RegisterPage() {
       return
     }
 
-    // Token validation for sales registration
     if (token === 'salesHSK') {
-      // Special token for HSK sales team
       setIsAuthorized(true)
     } else {
-      // Check if token starts with 'sales_' (for future dynamic tokens)
       if (token.startsWith('sales_')) {
         setIsAuthorized(true)
       } else {
@@ -78,7 +71,7 @@ export default function RegisterPage() {
     if (error) setError('')
   }
 
-  const validateForm = () => {
+  const validateBasicInfo = () => {
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
       setError('First name and last name are required')
       return false
@@ -87,6 +80,10 @@ export default function RegisterPage() {
       setError('Valid email is required')
       return false
     }
+    return true
+  }
+
+  const validatePassword = () => {
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters')
       return false
@@ -95,55 +92,31 @@ export default function RegisterPage() {
       setError('Passwords do not match')
       return false
     }
-    if (!formData.phoneValid) {
-      setError('Valid phone number is required')
-      return false
-    }
-    if (!otpVerified) {
-      setError('Phone number verification is required')
-      return false
-    }
-    if (!emailVerified) {
-      setError('Email verification is required')
-      return false
-    }
     return true
   }
 
-  const handleShowOTP = (e) => {
+  const handleSubmitBasicInfo = (e) => {
     e.preventDefault()
     setError('')
-    
-    if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim() || !formData.phoneValid) {
-      setError('Please fill in all required fields')
-      return
-    }
-    
-    setVerificationStep('phone')
-    setShowOTP(true)
+    if (!validateBasicInfo()) return
+    setStep('email')
   }
 
-  const handlePhoneVerified = () => {
-    setOtpVerified(true)
-    setShowOTP(false)
-    setShowEmailOTP(true)
-    setVerificationStep('email')
-  }
-
-  const handleEmailVerified = () => {
+  const handleEmailConfirmed = () => {
     setEmailVerified(true)
-    setShowEmailOTP(false)
-    setVerificationStep('register')
+    setStep('password')
   }
 
   const handleRegister = async (e) => {
     e.preventDefault()
     setError('')
-    
-    if (!validateForm()) return
-    
-    setLoading(true)
+    if (!validatePassword()) return
+    if (!emailVerified) {
+      setError('Email verification is required')
+      return
+    }
 
+    setLoading(true)
     try {
       const res = await authAPI.register({
         firstName: formData.firstName,
@@ -154,11 +127,9 @@ export default function RegisterPage() {
         password: formData.password
       })
 
-      const { token, user } = res.data
-      localStorage.setItem('sf_token', token)
+      const { token: authToken, user } = res.data
+      localStorage.setItem('sf_token', authToken)
       localStorage.setItem('sf_user', JSON.stringify(user))
-
-      // Redirect to sales dashboard
       navigate('#/sales')
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed. Please try again.')
@@ -183,30 +154,29 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        {/* Registration Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-7">
-          <h2 className="text-lg font-bold text-gray-800 mb-1">
-            Create Sales Account
-          </h2>
-          <p className="text-sm text-gray-400 mb-6">
-            Register as a sales person to start selling
-          </p>
+        {/* Step 1: Basic Info Form */}
+        {step === 'form' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-7">
+            <h2 className="text-lg font-bold text-gray-800 mb-1">
+              Create Sales Account
+            </h2>
+            <p className="text-sm text-gray-400 mb-6">
+              Fill in your information to get started
+            </p>
 
-          {error && (
-            <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-start gap-3 animate-fade-in">
-              <div className="shrink-0 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center mt-0.5">
-                <span className="text-red-600 text-xs font-bold">!</span>
+            {error && (
+              <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-start gap-3 animate-fade-in">
+                <div className="shrink-0 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center mt-0.5">
+                  <span className="text-red-600 text-xs font-bold">!</span>
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-red-800">Error</p>
+                  <p className="text-red-600 mt-1">{error}</p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="font-semibold text-red-800">Registration Failed</p>
-                <p className="text-red-600 mt-1">{error}</p>
-                <p className="text-red-500 text-xs mt-2">Please check your information and try again.</p>
-              </div>
-            </div>
-          )}
+            )}
 
-          {!showOTP ? (
-            <form onSubmit={handleShowOTP} className="space-y-4">
+            <form onSubmit={handleSubmitBasicInfo} className="space-y-4">
               {/* Name Fields */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -239,132 +209,69 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1.5">
-                Email Address
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="you@example.com"
-                required
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all text-gray-800 placeholder-gray-300 text-sm"
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-600 mb-1.5">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                  required
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all text-gray-800 placeholder-gray-300 text-sm"
+                />
+              </div>
+
+              {/* Phone */}
+              <CountryPhoneInput
+                value={{
+                  countryCode: formData.countryCode,
+                  phone: formData.phone,
+                  country: formData.country
+                }}
+                onChange={(phoneData) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    ...phoneData,
+                    phoneValid: phoneData.phone !== '' && phoneData.phone !== undefined
+                  }))
+                  if (error) setError('')
+                }}
+                error={error}
+                setError={setError}
               />
-            </div>
 
-            {/* Phone */}
-            <CountryPhoneInput
-              value={{
-                countryCode: formData.countryCode,
-                phone: formData.phone,
-                country: formData.country
-              }}
-              onChange={(phoneData) => {
-                setFormData(prev => ({
-                  ...prev,
-                  ...phoneData,
-                  phoneValid: phoneData.phone !== '' && phoneData.phone !== undefined
-                }))
-                if (error) setError('')
-              }}
-              error={error}
-              setError={setError}
-            />
+              {/* Submit */}
+              <button
+                type="submit"
+                className="w-full py-3.5 rounded-xl gradient-primary text-white font-bold text-sm shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer mt-2"
+              >
+                <Mail size={18} />
+                Continue &amp; Verify Email
+              </button>
+            </form>
+          </div>
+        )}
 
-            {/* Password */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Min 6 characters"
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all text-gray-800 placeholder-gray-300 pr-12 text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors cursor-pointer"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1.5">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="Confirm password"
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all text-gray-800 placeholder-gray-300 pr-12 text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors cursor-pointer"
-                >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 rounded-xl gradient-primary text-white font-bold text-sm shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer mt-2"
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <UserPlus size={18} />
-                  Verify Phone Number
-                </>
-              )}
-            </button>
-          </form>
-          ) : (
-            <OTPVerification
-              phoneNumber={formData.phone}
-              countryCode={formData.countryCode}
-              onVerified={handlePhoneVerified}
-              onCancel={() => setShowOTP(false)}
-              onBack={() => setShowOTP(false)}
-            />
-          )}
-        </div>
-
-        {/* Email Verification */}
-        {showEmailOTP && (
+        {/* Step 2: Email Confirmation */}
+        {step === 'email' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-7">
-            <EmailVerification
+            <EmailConfirmation
               email={formData.email}
-              onVerified={handleEmailVerified}
-              onCancel={() => setShowEmailOTP(false)}
-              onBack={() => setShowEmailOTP(false)}
+              firstName={formData.firstName}
+              lastName={formData.lastName}
+              onConfirmed={handleEmailConfirmed}
+              onCancel={() => setStep('form')}
+              onBack={() => setStep('form')}
             />
           </div>
         )}
 
-        {/* Registration Form */}
-        {verificationStep === 'register' && (
+        {/* Step 3: Set Password */}
+        {step === 'password' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-7">
             <h2 className="text-lg font-bold text-gray-800 mb-1">
               Complete Registration
@@ -373,13 +280,19 @@ export default function RegisterPage() {
               Set your password to complete registration
             </p>
 
+            {/* Email Verified Badge */}
+            <div className="mb-4 p-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm font-medium flex items-center gap-2">
+              <Mail size={16} className="text-green-600" />
+              <span>Email verified: <strong>{formData.email}</strong></span>
+            </div>
+
             {error && (
               <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-start gap-3 animate-fade-in">
                 <div className="shrink-0 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center mt-0.5">
                   <span className="text-red-600 text-xs font-bold">!</span>
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-red-800">Registration Failed</p>
+                  <p className="font-semibold text-red-800">Error</p>
                   <p className="text-red-600 mt-1">{error}</p>
                 </div>
               </div>
@@ -465,19 +378,19 @@ export default function RegisterPage() {
           </p>
         </div>
 
-          {/* Security badges */}
-          <div className="mt-6 pt-5 border-t border-gray-100">
-            <div className="flex items-center justify-center gap-4 text-gray-300">
-              <div className="flex items-center gap-1.5">
-                <Shield size={14} />
-                <span className="text-xs font-medium">SSL Secured</span>
-              </div>
-              <div className="w-1 h-1 rounded-full bg-gray-200" />
-              <div className="flex items-center gap-1.5">
-                <Lock size={14} />
-                <span className="text-xs font-medium">Encrypted</span>
-              </div>
+        {/* Security badges */}
+        <div className="mt-6 pt-5 border-t border-gray-100">
+          <div className="flex items-center justify-center gap-4 text-gray-300">
+            <div className="flex items-center gap-1.5">
+              <Shield size={14} />
+              <span className="text-xs font-medium">SSL Secured</span>
             </div>
+            <div className="w-1 h-1 rounded-full bg-gray-200" />
+            <div className="flex items-center gap-1.5">
+              <Lock size={14} />
+              <span className="text-xs font-medium">Encrypted</span>
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
