@@ -87,7 +87,7 @@ router.post('/send-confirmation', async (req, res) => {
 
       // Send email
       const result = await resend.emails.send({
-        from: process.env.FROM_EMAIL || 'noreply@hsk-shwe-flash.vercel.app',
+        from: 'onboarding@resend.dev',
         to: normalizedEmail,
         subject: 'Confirm Your Email Address - HSK Shwe Flash',
         html: `
