@@ -2,7 +2,7 @@
 // Production: Railway backend
 // Development: Local backend
 
-export const API_BASE = 'https://checkout.up.railway.app/api';
+export const API_BASE = 'https://checkout-backend.vercel.app/api';
 export const BASE_URL = 'https://hsk-shwe-flash.vercel.app';
 
 // Force cache busting
