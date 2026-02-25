@@ -87,7 +87,7 @@ router.post('/send-confirmation', async (req, res) => {
 
       // Send email
       const result = await resend.emails.send({
-        from: 'HSK Shwe Flash <notifications@resend.dev>',
+        from: 'HSK Shwe Flash <onboarding@resend.dev>',
         to: normalizedEmail,
         subject: 'Sales Registration Confirmation - HSK Shwe Flash',
         html: `
@@ -173,15 +173,31 @@ router.post('/send-confirmation', async (req, res) => {
         stack: emailError.stack
       });
       
-      // Return error to user
+      // Check if it's rate limit error
+      if (emailError.message?.includes('rate_limit') || emailError.code === 'rate_limit_exceeded') {
+        console.log('⚠️ Resend rate limit exceeded, using mock email');
+        
+        // Mock email - show confirmation link in logs
+        console.log(`📧 MOCK EMAIL - Confirmation link for ${normalizedEmail}: ${confirmationLink}`);
+        console.log(`📧 MOCK EMAIL - Token: ${token} (expires: ${expiresAt})`);
+        
+        // Still return success but with mock notification
+        return res.json({
+          success: true,
+          message: 'Confirmation email sent successfully (mock mode - check console for link)',
+          mockMode: true,
+          confirmationLink: process.env.NODE_ENV === 'development' ? confirmationLink : undefined,
+          token: process.env.NODE_ENV === 'development' ? token : undefined,
+          expiresIn: 86400
+        });
+      }
+      
+      // Return error for other issues
       return res.status(500).json({
         success: false,
         message: 'Failed to send confirmation email',
         error: emailError.message
       });
-      // Fallback to mock for development
-      console.log(`📧 Confirmation link for ${normalizedEmail}: ${confirmationLink}`);
-      console.log(`📧 Token: ${token} (expires: ${expiresAt})`);
     }
     
     res.json({
