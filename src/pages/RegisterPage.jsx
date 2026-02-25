@@ -238,7 +238,6 @@ export default function RegisterPage() {
                   />
                 </div>
               </div>
-            </div>
 
             {/* Email */}
             <div>
@@ -479,7 +478,6 @@ export default function RegisterPage() {
                 <span className="text-xs font-medium">Encrypted</span>
               </div>
             </div>
-          </div>
         </div>
 
         {/* Footer */}
