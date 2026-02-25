@@ -89,7 +89,13 @@ const server = app.listen(PORT, () => {
   console.log(`📡 API: ${baseUrl}/api`);
   console.log(`💳 Payment: ${baseUrl}/api/payment`);
   console.log(`🔐 Auth: ${baseUrl}/api/auth`);
+  console.log(`📧 Email: ${baseUrl}/api/email-confirmation`);
   console.log(`✅ Server is ready and accepting connections\n`);
+  console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
+  console.log(`🔧 Port: ${PORT}`);
+  console.log(`🔧 DATABASE_URL exists:`, !!process.env.DATABASE_URL);
+  console.log(`🔧 DB_NAME:`, process.env.DB_NAME);
+  console.log(`🔧 RESEND_API_KEY exists:`, !!process.env.RESEND_API_KEY);
 });
 
 server.on('error', (err) => {

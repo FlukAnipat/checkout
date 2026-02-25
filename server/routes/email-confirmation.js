@@ -12,10 +12,20 @@ function generateConfirmationToken() {
 // Send confirmation email
 router.post('/send-confirmation', async (req, res) => {
   try {
+    console.log('🔧 Debug: Email confirmation request received');
+    console.log('🔧 Debug: Request body:', req.body);
+    
     const { email, firstName, lastName } = req.body;
     
     if (!email || !firstName || !lastName) {
+      console.log('🔧 Debug: Missing required fields');
       return res.status(400).json({ error: 'Email, first name, and last name are required' });
+    }
+    
+    // Check database connection
+    if (!pool) {
+      console.log('🔧 Debug: Database pool not available');
+      return res.status(500).json({ error: 'Database connection not available' });
     }
 
     const normalizedEmail = email.toLowerCase().trim();

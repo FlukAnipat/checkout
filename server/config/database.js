@@ -55,24 +55,42 @@ if (railwayUrl && railwayUrl.includes('mysql://')) {
 
 // Test connection on startup with retry logic
 (async () => {
-  const maxRetries = 5;
-  const retryDelay = 3000; // 3 seconds
+  const maxRetries = 3;
+  const retryDelay = 5000; // 5 seconds
+  
+  console.log('🔧 Starting database connection test...');
+  console.log('🔧 DATABASE_URL exists:', !!process.env.DATABASE_URL);
+  console.log('🔧 DB_NAME:', process.env.DB_NAME);
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const conn = await pool.getConnection();
       console.log('✅ Connected to MySQL database (Railway)');
+      console.log('🔧 Database info:', {
+        host: conn.config.host,
+        port: conn.config.port,
+        database: conn.config.database
+      });
       conn.release();
       break;
     } catch (err) {
       console.error(`❌ MySQL connection attempt ${attempt}/${maxRetries} failed:`, err.message);
+      console.error('🔧 Error details:', {
+        code: err.code,
+        errno: err.errno,
+        sqlState: err.sqlState,
+        sqlMessage: err.sqlMessage
+      });
       
       if (attempt === maxRetries) {
         console.error('🚨 All connection attempts failed. Please check:');
         console.error('   - DATABASE_URL environment variable');
+        console.error('   - DB_NAME environment variable');
         console.error('   - Railway service status');
         console.error('   - Network connectivity');
-        process.exit(1);
+        console.log('⚠️ Continuing without database connection - some features may not work');
+        // Don't exit process, just log warning
+        return;
       }
       
       console.log(`⏳ Retrying in ${retryDelay/1000} seconds...`);
