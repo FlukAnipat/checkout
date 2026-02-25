@@ -24,22 +24,35 @@ let pool;
 
 if (railwayUrl && railwayUrl.includes('mysql://')) {
   // Parse Railway connection string
-  const url = new URL(railwayUrl);
-  pool = mysql.createPool({
-    host: url.hostname,
-    port: parseInt(url.port) || 3306,
-    user: url.username,
-    password: url.password,
-    database: process.env.DB_NAME || url.pathname.substring(1), // Remove leading slash
-    waitForConnections: true,
-    connectionLimit: 5, // Reduce for Railway
-    queueLimit: 0,
-    ssl: { rejectUnauthorized: false },
-    idleTimeout: 300000, // 5 minutes
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 0
-  });
-} else {
+  try {
+    // Clean URL (remove prefix if accidentally included)
+    const cleanUrl = railwayUrl.startsWith('DATABASE_URL=') 
+      ? railwayUrl.replace('DATABASE_URL=', '') 
+      : railwayUrl;
+    const url = new URL(cleanUrl);
+    console.log('🔧 Parsed DATABASE_URL:', { host: url.hostname, port: url.port, database: process.env.DB_NAME || url.pathname.substring(1) });
+    pool = mysql.createPool({
+      host: url.hostname,
+      port: parseInt(url.port) || 3306,
+      user: url.username,
+      password: decodeURIComponent(url.password),
+      database: process.env.DB_NAME || url.pathname.substring(1),
+      waitForConnections: true,
+      connectionLimit: 5,
+      queueLimit: 0,
+      ssl: { rejectUnauthorized: false },
+      idleTimeout: 300000,
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 0
+    });
+  } catch (urlError) {
+    console.error('❌ Failed to parse DATABASE_URL:', urlError.message);
+    console.log('🔧 Falling back to individual DB variables...');
+    // Fall through to else block
+  }
+}
+
+if (!pool) {
   // Fallback to individual environment variables (for local development)
   pool = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',

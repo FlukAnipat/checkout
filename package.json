@@ -10,7 +10,7 @@
     "dev:all": "concurrently \"npm run dev:server\" \"npm run dev\"",
     "build": "vite build",
     "vercel-build": "vite build",
-    "start": "node server/server.js",
+    "start": "node start.js",
     "start:test": "node test-server.js",
     "lint": "eslint .",
     "preview": "vite preview"

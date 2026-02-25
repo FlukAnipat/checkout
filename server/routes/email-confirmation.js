@@ -1,6 +1,7 @@
 import express from 'express';
 import { pool } from '../config/database.js';
 import crypto from 'crypto';
+import { Resend } from 'resend';
 
 const router = express.Router();
 
@@ -80,8 +81,6 @@ router.post('/send-confirmation', async (req, res) => {
     try {
       console.log('🔧 Debug: Starting Resend API...');
       console.log('🔧 Debug: RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
-      
-      const { Resend } = require('resend');
       
       const resend = new Resend(process.env.RESEND_API_KEY);
       console.log('🔧 Debug: Resend client created');

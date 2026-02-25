@@ -27,12 +27,7 @@ const PORT = process.env.PORT || 8080;
 
 // ── Middleware ──
 app.use(cors({
-  origin: [
-    'https://hsk-shwe-flash.vercel.app',
-    'https://checkout-tau-two.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:3000'
-  ],
+  origin: true,
   credentials: true,
 }));
 app.use(express.json());
@@ -64,13 +59,8 @@ app.get('/api/test/simple', (req, res) => {
   });
 });
 
-// ── Serve React build in production ──
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '..', 'dist')));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
-  });
-}
+// Note: Frontend is served by Vercel, not Railway
+// Railway only serves API endpoints
 
 // ── Error Handling Middleware (must be AFTER routes) ──
 app.use((err, req, res, next) => {
