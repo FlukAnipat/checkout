@@ -30,7 +30,7 @@ if (railwayUrl && railwayUrl.includes('mysql://')) {
     port: parseInt(url.port) || 3306,
     user: url.username,
     password: url.password,
-    database: url.pathname.substring(1), // Remove leading slash
+    database: process.env.DB_NAME || url.pathname.substring(1), // Remove leading slash
     waitForConnections: true,
     connectionLimit: 5, // Reduce for Railway
     queueLimit: 0,
