@@ -584,7 +584,7 @@ export async function getSalesPromoCodes(salesPersonId) {
 export async function getSalesDashboardStats(salesPersonId) {
   const COMMISSION_RATE = 0.20;
   const [promoRows] = await pool.execute(
-    `SELECT pc.code FROM promo_codes WHERE sales_person_id = ?`,
+    `SELECT code FROM promo_codes WHERE sales_person_id = ?`,
     [salesPersonId]
   );
   
