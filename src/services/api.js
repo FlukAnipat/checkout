@@ -24,7 +24,7 @@ api.interceptors.response.use(
       // TODO: Clear auth context instead of localStorage
       localStorage.removeItem('sf_token');
       localStorage.removeItem('sf_user');
-      window.location.href = '/login';
+      window.location.hash = '#/login';
     }
     return Promise.reject(error);
   }
