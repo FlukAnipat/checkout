@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { authAPI } from '../services/api'
 import CountryPhoneInput from '../components/CountryPhoneInput.jsx'
+import OTPVerification from '../components/OTPVerification.jsx'
 import { Eye, EyeOff, UserPlus, Shield, Lock, Building } from 'lucide-react'
 
 export default function RegisterPage() {
@@ -24,6 +25,8 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showOTP, setShowOTP] = useState(false)
+  const [otpVerified, setOtpVerified] = useState(false)
 
   // Validate registration token
   useEffect(() => {
@@ -88,7 +91,27 @@ export default function RegisterPage() {
       setError('Passwords do not match')
       return false
     }
+    if (!formData.phoneValid) {
+      setError('Valid phone number is required')
+      return false
+    }
+    if (!otpVerified) {
+      setError('Phone number verification is required')
+      return false
+    }
     return true
+  }
+
+  const handleShowOTP = (e) => {
+    e.preventDefault()
+    setError('')
+    
+    if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim() || !formData.phoneValid) {
+      setError('Please fill in all required fields and verify phone number')
+      return
+    }
+    
+    setShowOTP(true)
   }
 
   const handleRegister = async (e) => {
@@ -155,40 +178,43 @@ export default function RegisterPage() {
               <div className="flex-1">
                 <p className="font-semibold text-red-800">Registration Failed</p>
                 <p className="text-red-600 mt-1">{error}</p>
+                <p className="text-red-500 text-xs mt-2">Please check your information and try again.</p>
               </div>
             </div>
           )}
 
-          <form onSubmit={handleRegister} className="space-y-4">
-            {/* Name Fields */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-1.5">
-                  First Name
-                </label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  placeholder="John"
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all text-gray-800 placeholder-gray-300 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-1.5">
-                  Last Name
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  placeholder="Doe"
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all text-gray-800 placeholder-gray-300 text-sm"
-                />
+          {!showOTP ? (
+            <form onSubmit={handleShowOTP} className="space-y-4">
+              {/* Name Fields */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-600 mb-1.5">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    placeholder="John"
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all text-gray-800 placeholder-gray-300 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-600 mb-1.5">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    placeholder="Doe"
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all text-gray-800 placeholder-gray-300 text-sm"
+                  />
+                </div>
               </div>
             </div>
 
@@ -288,11 +314,21 @@ export default function RegisterPage() {
               ) : (
                 <>
                   <UserPlus size={18} />
-                  Create Sales Account
+                  Verify Phone Number
                 </>
               )}
             </button>
           </form>
+          ) : (
+            <OTPVerification
+              phoneNumber={formData.phone}
+              countryCode={formData.countryCode}
+              onVerified={() => setOtpVerified(true)}
+              onCancel={() => setShowOTP(false)}
+              onBack={() => setShowOTP(false)}
+            />
+          )}
+        </div>
 
           {/* Login Link */}
           <div className="mt-6 text-center">
