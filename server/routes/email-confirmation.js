@@ -87,7 +87,7 @@ router.post('/send-confirmation', async (req, res) => {
 
       // Send email
       const result = await resend.emails.send({
-        from: 'HSK Shwe Flash <delivered@resend.dev>',
+        from: 'HSK Shwe Flash <notifications@resend.dev>',
         to: normalizedEmail,
         subject: 'Sales Registration Confirmation - HSK Shwe Flash',
         html: `
