@@ -1,10 +1,13 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { authAPI } from '../services/api'
 import { Eye, EyeOff, UserPlus, Shield, Lock, Building } from 'lucide-react'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const { token } = useParams()
+  const [isAuthorized, setIsAuthorized] = useState(false)
+  const [tokenError, setTokenError] = useState('')
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -18,6 +21,41 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Validate registration token
+  useEffect(() => {
+    if (!token) {
+      setTokenError('Access denied. Registration token required.')
+      return
+    }
+
+    // Simple token validation (in production, validate against database)
+    const validTokens = ['sales2024', 'invite123', 'register456']
+    if (validTokens.includes(token)) {
+      setIsAuthorized(true)
+    } else {
+      setTokenError('Invalid or expired registration token.')
+    }
+  }, [token])
+
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-md text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-100 mb-4">
+            <Shield className="w-8 h-8 text-red-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Restricted</h1>
+          <p className="text-gray-600 mb-6">
+            {tokenError || 'Sales registration is by invitation only.'}
+          </p>
+          <a href="#/login" className="inline-flex items-center justify-center px-6 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors">
+            Back to Login
+          </a>
+        </div>
+      </div>
+    )
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target

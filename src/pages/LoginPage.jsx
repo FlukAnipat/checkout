@@ -180,8 +180,8 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Register Link */}
-        <div className="mt-6 text-center">
+        {/* Register Link - Hidden for regular users */}
+        <div className="mt-6 text-center hidden">
           <p className="text-sm text-gray-400">
             Want to become a sales person?{' '}
             <a href="#/register" className="text-primary-500 font-semibold hover:text-primary-600 transition-colors">

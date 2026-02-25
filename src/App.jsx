@@ -24,7 +24,19 @@ export default function App() {
     <HashRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/register" element={
+          <div className="min-h-screen flex items-center justify-center px-4 py-8">
+            <div className="w-full max-w-md text-center">
+              <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Restricted</h1>
+              <p className="text-gray-600 mb-6">
+                Sales registration is by invitation only. Please contact your administrator for access.
+              </p>
+              <a href="#/login" className="inline-flex items-center justify-center px-6 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors">
+                Back to Login
+              </a>
+            </div>
+          </div>
+        } />
         <Route
           path="/payment"
           element={
@@ -57,6 +69,7 @@ export default function App() {
             </RoleRoute>
           }
         />
+        <Route path="/register/:token" element={<RegisterPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </HashRouter>
