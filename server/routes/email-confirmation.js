@@ -66,12 +66,68 @@ router.post('/send-confirmation', async (req, res) => {
     // Create confirmation link
     const confirmationLink = `https://hsk-shwe-flash.vercel.app/confirm-email?token=${token}`;
     
-    // Mock email sending (in production, integrate with SendGrid or AWS SES)
-    console.log(`📧 Confirmation link for ${normalizedEmail}: ${confirmationLink}`);
-    console.log(`📧 Token: ${token} (expires: ${expiresAt})`);
-    
-    // For demo purposes, we'll log the link in console
-    // In production, this would be sent via email service like SendGrid
+    // Send real email using Resend API (Free Tier: 3,000 emails/month)
+    try {
+      const { Resend } = require('resend');
+      
+      const resend = new Resend(process.env.RESEND_API_KEY);
+
+      // Send email
+      await resend.emails.send({
+        from: 'onboarding@resend.dev',
+        to: normalizedEmail,
+        subject: 'Confirm Your Email Address - HSK Shwe Flash',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 30px;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">HSK Shwe Flash</h1>
+              <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Sales Registration</p>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 30px; border-radius: 10px; margin-bottom: 30px;">
+              <h2 style="color: #333; margin: 0 0 20px 0; font-size: 20px;">Confirm Your Email Address</h2>
+              <p style="color: #666; margin: 0 0 20px 0; line-height: 1.6;">
+                Hi ${firstName},<br><br>
+                Thank you for registering as a sales person for HSK Shwe Flash. Please click the button below to confirm your email address and complete your registration.
+              </p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${confirmationLink}" 
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                          color: white; 
+                          padding: 15px 30px; 
+                          text-decoration: none; 
+                          border-radius: 5px; 
+                          font-weight: bold; 
+                          display: inline-block;">
+                  Confirm Email Address
+                </a>
+              </div>
+              
+              <p style="color: #666; margin: 20px 0 0 0; font-size: 14px; line-height: 1.6;">
+                If the button above doesn't work, you can copy and paste this link into your browser:<br>
+                <a href="${confirmationLink}" style="color: #667eea; word-break: break-all;">${confirmationLink}</a>
+              </p>
+              
+              <p style="color: #999; margin: 20px 0 0 0; font-size: 12px;">
+                This link expires in 24 hours. If you didn't request this email, please ignore it.
+              </p>
+            </div>
+            
+            <div style="text-align: center; color: #999; font-size: 12px;">
+              <p>&copy; ${new Date().getFullYear()} HSK Shwe Flash. All rights reserved.</p>
+            </div>
+          </div>
+        `
+      });
+      
+      console.log(`📧 Email sent successfully to ${normalizedEmail}`);
+    } catch (emailError) {
+      console.error('Email sending error:', emailError);
+      // Fallback to mock for development
+      console.log(`📧 Confirmation link for ${normalizedEmail}: ${confirmationLink}`);
+      console.log(`📧 Token: ${token} (expires: ${expiresAt})`);
+    }
     
     res.json({
       success: true,
