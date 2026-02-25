@@ -9,7 +9,7 @@ export default function OTPVerification({
   onCancel,
   onBack 
 }) {
-  const [otp, setOtp] = useState(['', '', '', '', '', '', ''])
+  const [otp, setOtp] = useState(['', '', '', ''])
   const [isLoading, setIsLoading] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [timeLeft, setTimeLeft] = useState(300) // 5 minutes
@@ -183,7 +183,7 @@ export default function OTPVerification({
         </div>
         <h3 className="text-xl font-bold text-gray-900 mb-2">Verify Your Phone</h3>
         <p className="text-gray-600 text-sm">
-          We've sent a 6-digit code to {countryCode} {phoneNumber}
+          We've sent a 4-digit code to {countryCode} {phoneNumber}
         </p>
       </div>
 

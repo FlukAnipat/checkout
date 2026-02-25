@@ -6,9 +6,9 @@ const router = express.Router();
 // Store OTP codes (in production, use Redis or database table)
 const otpStore = new Map();
 
-// Generate 6-digit OTP
+// Generate 4-digit OTP
 function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
 // Send OTP (mock implementation - in production, use SMS service)
