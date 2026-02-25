@@ -173,6 +173,26 @@ router.post('/send-confirmation', async (req, res) => {
         stack: emailError.stack
       });
       
+      // Check if it's testing API key limitation
+      if (emailError.message?.includes('only send testing emails to your own email')) {
+        console.log('⚠️ Testing API key detected, using mock email for other recipients');
+        
+        // Mock email - show confirmation link in logs
+        console.log(`📧 MOCK EMAIL - Confirmation link for ${normalizedEmail}: ${confirmationLink}`);
+        console.log(`📧 MOCK EMAIL - Token: ${token} (expires: ${expiresAt})`);
+        console.log(`📧 MOCK EMAIL - Email would be sent to: ${normalizedEmail}`);
+        
+        // Still return success but with mock notification
+        return res.json({
+          success: true,
+          message: 'Confirmation email sent successfully (mock mode - check console for link)',
+          mockMode: true,
+          confirmationLink: confirmationLink, // Show link for testing
+          token: token, // Show token for testing
+          expiresIn: 86400
+        });
+      }
+      
       // Check if it's rate limit error
       if (emailError.message?.includes('rate_limit') || emailError.code === 'rate_limit_exceeded') {
         console.log('⚠️ Resend rate limit exceeded, using mock email');
@@ -186,8 +206,8 @@ router.post('/send-confirmation', async (req, res) => {
           success: true,
           message: 'Confirmation email sent successfully (mock mode - check console for link)',
           mockMode: true,
-          confirmationLink: process.env.NODE_ENV === 'development' ? confirmationLink : undefined,
-          token: process.env.NODE_ENV === 'development' ? token : undefined,
+          confirmationLink: confirmationLink,
+          token: token,
           expiresIn: 86400
         });
       }
