@@ -27,7 +27,12 @@ const PORT = process.env.PORT || 8080;
 
 // ── Middleware ──
 app.use(cors({
-  origin: true, // Allow all origins for development
+  origin: [
+    'https://hsk-shwe-flash.vercel.app',
+    'https://checkout-tau-two.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000'
+  ],
   credentials: true,
 }));
 app.use(express.json());
