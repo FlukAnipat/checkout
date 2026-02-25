@@ -52,6 +52,46 @@ class OTPService {
       throw error.response?.data || { error: 'Failed to resend OTP' }
     }
   }
+
+  // Send Email OTP
+  async sendEmailOTP(email) {
+    try {
+      const response = await this.api.post('/otp/send-email', {
+        email: email.toLowerCase().trim()
+      })
+      return response.data
+    } catch (error) {
+      console.error('Email OTP send error:', error)
+      throw error.response?.data || { error: 'Failed to send email OTP' }
+    }
+  }
+
+  // Verify Email OTP
+  async verifyEmailOTP(email, otp) {
+    try {
+      const response = await this.api.post('/otp/verify-email', {
+        email: email.toLowerCase().trim(),
+        otp: otp
+      })
+      return response.data
+    } catch (error) {
+      console.error('Email OTP verify error:', error)
+      throw error.response?.data || { error: 'Failed to verify email OTP' }
+    }
+  }
+
+  // Resend Email OTP
+  async resendEmailOTP(email) {
+    try {
+      const response = await this.api.post('/otp/resend-email', {
+        email: email.toLowerCase().trim()
+      })
+      return response.data
+    } catch (error) {
+      console.error('Email OTP resend error:', error)
+      throw error.response?.data || { error: 'Failed to resend email OTP' }
+    }
+  }
 }
 
 export default new OTPService()

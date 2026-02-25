@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { authAPI } from '../services/api'
 import CountryPhoneInput from '../components/CountryPhoneInput.jsx'
 import OTPVerification from '../components/OTPVerification.jsx'
+import EmailVerification from '../components/EmailVerification.jsx'
 import { Eye, EyeOff, UserPlus, Shield, Lock, Building } from 'lucide-react'
 
 export default function RegisterPage() {
@@ -27,6 +28,9 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [showOTP, setShowOTP] = useState(false)
   const [otpVerified, setOtpVerified] = useState(false)
+  const [showEmailOTP, setShowEmailOTP] = useState(false)
+  const [emailVerified, setEmailVerified] = useState(false)
+  const [verificationStep, setVerificationStep] = useState('phone') // 'phone' | 'email' | 'register'
 
   // Validate registration token
   useEffect(() => {
@@ -99,6 +103,10 @@ export default function RegisterPage() {
       setError('Phone number verification is required')
       return false
     }
+    if (!emailVerified) {
+      setError('Email verification is required')
+      return false
+    }
     return true
   }
 
@@ -107,11 +115,25 @@ export default function RegisterPage() {
     setError('')
     
     if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim() || !formData.phoneValid) {
-      setError('Please fill in all required fields and verify phone number')
+      setError('Please fill in all required fields')
       return
     }
     
+    setVerificationStep('phone')
     setShowOTP(true)
+  }
+
+  const handlePhoneVerified = () => {
+    setOtpVerified(true)
+    setShowOTP(false)
+    setShowEmailOTP(true)
+    setVerificationStep('email')
+  }
+
+  const handleEmailVerified = () => {
+    setEmailVerified(true)
+    setShowEmailOTP(false)
+    setVerificationStep('register')
   }
 
   const handleRegister = async (e) => {
@@ -323,22 +345,126 @@ export default function RegisterPage() {
             <OTPVerification
               phoneNumber={formData.phone}
               countryCode={formData.countryCode}
-              onVerified={() => setOtpVerified(true)}
+              onVerified={handlePhoneVerified}
               onCancel={() => setShowOTP(false)}
               onBack={() => setShowOTP(false)}
             />
           )}
         </div>
 
-          {/* Login Link */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-400">
-              Already have an account?{' '}
-              <a href="#/login" className="text-primary-500 font-semibold hover:text-primary-600 transition-colors">
-                Sign in here
-              </a>
-            </p>
+        {/* Email Verification */}
+        {showEmailOTP && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-7">
+            <EmailVerification
+              email={formData.email}
+              onVerified={handleEmailVerified}
+              onCancel={() => setShowEmailOTP(false)}
+              onBack={() => setShowEmailOTP(false)}
+            />
           </div>
+        )}
+
+        {/* Registration Form */}
+        {verificationStep === 'register' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-7">
+            <h2 className="text-lg font-bold text-gray-800 mb-1">
+              Complete Registration
+            </h2>
+            <p className="text-sm text-gray-400 mb-6">
+              Set your password to complete registration
+            </p>
+
+            {error && (
+              <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-start gap-3 animate-fade-in">
+                <div className="shrink-0 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center mt-0.5">
+                  <span className="text-red-600 text-xs font-bold">!</span>
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-red-800">Registration Failed</p>
+                  <p className="text-red-600 mt-1">{error}</p>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleRegister} className="space-y-4">
+              {/* Password */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-600 mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Min 6 characters"
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all text-gray-800 placeholder-gray-300 pr-12 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-600 mb-1.5">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="Confirm password"
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all text-gray-800 placeholder-gray-300 pr-12 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors cursor-pointer"
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 rounded-xl gradient-primary text-white font-bold text-sm shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer mt-2"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <UserPlus size={18} />
+                    Create Sales Account
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Login Link */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-400">
+            Already have an account?{' '}
+            <a href="#/login" className="text-primary-500 font-semibold hover:text-primary-600 transition-colors">
+              Sign in here
+            </a>
+          </p>
+        </div>
 
           {/* Security badges */}
           <div className="mt-6 pt-5 border-t border-gray-100">
