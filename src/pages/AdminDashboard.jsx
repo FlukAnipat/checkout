@@ -6,7 +6,7 @@ import {
   BarChart3, Users, DollarSign, Tag, LogOut, Plus, 
   CreditCard, Shield, RefreshCw, BookOpen, X, ChevronDown, UserCheck, Link
 } from 'lucide-react'
-import Pagination from './Pagination.jsx'
+import Pagination from '../components/Pagination.jsx'
 
 function formatPrice(amount) {
   return Number(amount).toLocaleString()
