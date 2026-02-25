@@ -80,6 +80,10 @@ export default function RegisterPage() {
       setError('Valid email is required')
       return false
     }
+    if (!formData.phone.trim() || !formData.phoneValid) {
+      setError('Valid phone number is required')
+      return false
+    }
     return true
   }
 
@@ -130,7 +134,7 @@ export default function RegisterPage() {
       const { token: authToken, user } = res.data
       localStorage.setItem('sf_token', authToken)
       localStorage.setItem('sf_user', JSON.stringify(user))
-      navigate('#/sales')
+      navigate('#/login')
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed. Please try again.')
     } finally {
