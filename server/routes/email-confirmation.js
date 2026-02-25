@@ -23,11 +23,45 @@ router.post('/send-confirmation', async (req, res) => {
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
     
     // Store confirmation token in database
-    await pool.execute(
-      `INSERT INTO email_confirmations (token, email, first_name, last_name, expires_at, created_at) 
-       VALUES (?, ?, ?, ?, ?, NOW())`,
-      [token, normalizedEmail, firstName, lastName, expiresAt]
-    );
+    try {
+      await pool.execute(
+        `INSERT INTO email_confirmations (token, email, first_name, last_name, expires_at, created_at) 
+         VALUES (?, ?, ?, ?, ?, NOW())`,
+        [token, normalizedEmail, firstName, lastName, expiresAt]
+      );
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      // If table doesn't exist, create it
+      if (dbError.code === 'ER_NO_SUCH_TABLE') {
+        await pool.execute(`
+          CREATE TABLE IF NOT EXISTS email_confirmations (
+            id INT NOT NULL AUTO_INCREMENT,
+            token VARCHAR(64) NOT NULL UNIQUE,
+            email VARCHAR(255) NOT NULL,
+            first_name VARCHAR(100) NOT NULL,
+            last_name VARCHAR(100) NOT NULL,
+            used BOOLEAN NOT NULL DEFAULT FALSE,
+            expires_at DATETIME NOT NULL,
+            confirmed_at DATETIME DEFAULT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY unique_token (token),
+            KEY idx_email (email),
+            KEY idx_used (used),
+            KEY idx_expires_at (expires_at)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+        
+        // Retry the insert
+        await pool.execute(
+          `INSERT INTO email_confirmations (token, email, first_name, last_name, expires_at, created_at) 
+           VALUES (?, ?, ?, ?, ?, NOW())`,
+          [token, normalizedEmail, firstName, lastName, expiresAt]
+        );
+      } else {
+        throw dbError;
+      }
+    }
 
     // Create confirmation link
     const confirmationLink = `https://hsk-shwe-flash.vercel.app/confirm-email?token=${token}`;
@@ -50,7 +84,17 @@ router.post('/send-confirmation', async (req, res) => {
     
   } catch (error) {
     console.error('Send confirmation email error:', error);
-    res.status(500).json({ error: 'Failed to send confirmation email' });
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
+    
+    // Send detailed error for debugging
+    res.status(500).json({ 
+      error: 'Failed to send confirmation email',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
