@@ -111,7 +111,7 @@ router.post('/send-confirmation', async (req, res) => {
               <div style="padding: 30px;">
                 <h2 style="color: #2c3e50; margin: 0 0 20px 0; font-size: 20px;">Confirm Your Email Address</h2>
                 
-                <p style="color: #555; margin: 0 0 20px 0; font-size: 16px;">Hi ${name},</p>
+                <p style="color: #555; margin: 0 0 20px 0; font-size: 16px;">Hi ${firstName},</p>
                 
                 <p style="color: #555; margin: 0 0 25px 0; font-size: 16px; line-height: 1.5;">
                   Thank you for registering as a sales representative for HSK Shwe Flash. 
