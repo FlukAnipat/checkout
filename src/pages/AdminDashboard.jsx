@@ -6,6 +6,7 @@ import {
   BarChart3, Users, DollarSign, Tag, LogOut, Plus, 
   CreditCard, Shield, RefreshCw, BookOpen, X, ChevronDown, UserCheck, Link
 } from 'lucide-react'
+import Pagination from './Pagination.jsx'
 
 function formatPrice(amount) {
   return Number(amount).toLocaleString()
@@ -22,6 +23,12 @@ export default function AdminDashboard() {
   const [showCreatePromo, setShowCreatePromo] = useState(false)
   const [newPromo, setNewPromo] = useState({ code: '', discountPercent: 10, maxUses: 100, salesPersonId: '', expiresAt: '' })
   const [createError, setCreateError] = useState('')
+
+  // Pagination states
+  const [usersPage, setUsersPage] = useState(1)
+  const [paymentsPage, setPaymentsPage] = useState(1)
+  const [promoCodesPage, setPromoCodesPage] = useState(1)
+  const itemsPerPage = 10
 
   const user = JSON.parse(localStorage.getItem('sf_user') || '{}')
 
@@ -208,7 +215,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map(u => (
+                  {users.slice((usersPage - 1) * itemsPerPage, usersPage * itemsPerPage).map(u => (
                     <tr key={u.user_id} className="border-t border-gray-50 hover:bg-gray-50/50">
                       <td className="px-4 py-3 font-medium text-gray-900">{u.first_name} {u.last_name}</td>
                       <td className="px-4 py-3 text-gray-500">{u.email}</td>
@@ -236,6 +243,13 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              currentPage={usersPage}
+              totalPages={Math.ceil(users.length / itemsPerPage)}
+              onPageChange={setUsersPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={users.length}
+            />
           </div>
         )}
 
@@ -255,7 +269,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {payments.map(p => (
+                  {payments.slice((paymentsPage - 1) * itemsPerPage, paymentsPage * itemsPerPage).map(p => (
                     <tr key={p.payment_id} className="border-t border-gray-50 hover:bg-gray-50/50">
                       <td className="px-4 py-3">
                         <p className="font-medium text-gray-900">{p.customer_name}</p>
@@ -285,6 +299,13 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              currentPage={paymentsPage}
+              totalPages={Math.ceil(payments.length / itemsPerPage)}
+              onPageChange={setPaymentsPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={payments.length}
+            />
           </div>
         )}
 
@@ -312,7 +333,7 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {promoCodes.map(pc => (
+                    {promoCodes.slice((promoCodesPage - 1) * itemsPerPage, promoCodesPage * itemsPerPage).map(pc => (
                       <tr key={pc.code} className="border-t border-gray-50 hover:bg-gray-50/50">
                         <td className="px-4 py-3">
                           <span className="px-2 py-0.5 rounded-lg bg-primary-50 text-primary-600 font-bold text-xs">{pc.code}</span>
@@ -328,6 +349,13 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               </div>
+            <Pagination
+              currentPage={promoCodesPage}
+              totalPages={Math.ceil(promoCodes.length / itemsPerPage)}
+              onPageChange={setPromoCodesPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={promoCodes.length}
+            />
             </div>
           </div>
         )}

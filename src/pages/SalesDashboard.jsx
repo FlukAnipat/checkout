@@ -5,6 +5,7 @@ import {
   BarChart3, Users, DollarSign, Tag, LogOut, TrendingUp, 
   Ticket, ChevronRight, RefreshCw, BookOpen
 } from 'lucide-react'
+import Pagination from './Pagination.jsx'
 
 function formatPrice(amount) {
   return Number(amount).toLocaleString()
@@ -17,6 +18,11 @@ export default function SalesDashboard() {
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
+
+  // Pagination states
+  const [promoCodesPage, setPromoCodesPage] = useState(1)
+  const [customersPage, setCustomersPage] = useState(1)
+  const itemsPerPage = 10
 
   const user = JSON.parse(localStorage.getItem('sf_user') || '{}')
 
@@ -151,37 +157,46 @@ export default function SalesDashboard() {
                 <p className="text-gray-400 text-sm">No promo codes assigned yet</p>
               </div>
             ) : (
-              promoCodes.map(pc => (
-                <div key={pc.code} className="bg-white rounded-xl p-4 border border-gray-100">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 rounded-lg bg-primary-50 text-primary-600 font-bold text-sm">
-                        {pc.code}
+              <>
+                {promoCodes.slice((promoCodesPage - 1) * itemsPerPage, promoCodesPage * itemsPerPage).map(pc => (
+                  <div key={pc.code} className="bg-white rounded-xl p-4 border border-gray-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 rounded-lg bg-primary-50 text-primary-600 font-bold text-sm">
+                          {pc.code}
+                        </span>
+                        <span className="text-sm text-green-600 font-semibold">{Number(pc.discount_percent)}% OFF</span>
+                      </div>
+                      <span className="text-xs text-gray-400">
+                        {pc.times_used}/{pc.max_uses} used
                       </span>
-                      <span className="text-sm text-green-600 font-semibold">{Number(pc.discount_percent)}% OFF</span>
                     </div>
-                    <span className="text-xs text-gray-400">
-                      {pc.times_used}/{pc.max_uses} used
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3 text-center">
-                    <div>
-                      <p className="text-lg font-bold text-gray-900">{pc.times_used}</p>
-                      <p className="text-xs text-gray-400">Used</p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold text-gray-900">{formatPrice(pc.total_discount_given || 0)}</p>
-                      <p className="text-xs text-gray-400">Discount Given</p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold text-gray-900">
-                        {pc.expires_at ? new Date(pc.expires_at).toLocaleDateString() : 'Never'}
-                      </p>
-                      <p className="text-xs text-gray-400">Expires</p>
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div>
+                        <p className="text-lg font-bold text-gray-900">{pc.times_used}</p>
+                        <p className="text-xs text-gray-400">Used</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold text-gray-900">{formatPrice(pc.total_discount_given || 0)}</p>
+                        <p className="text-xs text-gray-400">Discount Given</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold text-gray-900">
+                          {pc.expires_at ? new Date(pc.expires_at).toLocaleDateString() : 'Never'}
+                        </p>
+                        <p className="text-xs text-gray-400">Expires</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                ))}
+                <Pagination
+                  currentPage={promoCodesPage}
+                  totalPages={Math.ceil(promoCodes.length / itemsPerPage)}
+                  onPageChange={setPromoCodesPage}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={promoCodes.length}
+                />
+              </>
             )}
           </div>
         )}
@@ -195,30 +210,39 @@ export default function SalesDashboard() {
                 <p className="text-gray-400 text-sm">No customers yet</p>
               </div>
             ) : (
-              customers.map(c => (
-                <div key={c.payment_id} className="bg-white rounded-xl p-4 border border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-gray-900 text-sm">{c.customer_name}</p>
-                      <p className="text-xs text-gray-400">{c.customer_email}</p>
+              <>
+                {customers.slice((customersPage - 1) * itemsPerPage, customersPage * itemsPerPage).map(c => (
+                  <div key={c.payment_id} className="bg-white rounded-xl p-4 border border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-gray-900 text-sm">{c.customer_name}</p>
+                        <p className="text-xs text-gray-400">{c.customer_email}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-gray-900 text-sm">{formatPrice(c.amount)} {c.currency}</p>
+                        <p className="text-xs text-green-600 font-medium">
+                          Commission: {formatPrice(Number(c.amount) * 0.2)} MMK
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-gray-900 text-sm">{formatPrice(c.amount)} {c.currency}</p>
-                      <p className="text-xs text-green-600 font-medium">
-                        Commission: {formatPrice(Number(c.amount) * 0.2)} MMK
-                      </p>
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
+                        {c.promo_code}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {new Date(c.created_at).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
-                      {c.promo_code}
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      {new Date(c.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              ))
+                ))}
+                <Pagination
+                  currentPage={customersPage}
+                  totalPages={Math.ceil(customers.length / itemsPerPage)}
+                  onPageChange={setCustomersPage}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={customers.length}
+                />
+              </>
             )}
           </div>
         )}
