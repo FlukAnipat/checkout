@@ -95,15 +95,39 @@ router.post('/register', async (req, res) => {
       email: normalizedEmail,
       phone: (phone || '').trim(),
       countryCode: countryCode || '+95',
-      password: hashedPassword,
+      country: 'Myanmar', // Default country
       role: role || 'user',
-      isPaid: false,
-      promoCodeUsed: null,
-      paidAt: null,
-      createdAt: new Date().toISOString(),
     };
 
-    await createUser(user);
+    // Create user_registrations table if not exists
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS user_registrations (
+        user_id VARCHAR(100) PRIMARY KEY,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        password VARCHAR(255) NOT NULL,
+        first_name VARCHAR(100) NOT NULL,
+        last_name VARCHAR(100) NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        country_code VARCHAR(10) NOT NULL,
+        country VARCHAR(100) NOT NULL,
+        role ENUM('user','sales','admin') NOT NULL DEFAULT 'user',
+        status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        approved_at DATETIME DEFAULT NULL,
+        rejected_at DATETIME DEFAULT NULL,
+        approved_by VARCHAR(100) DEFAULT NULL,
+        rejected_by VARCHAR(100) DEFAULT NULL,
+        notes TEXT DEFAULT NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Insert into pending registrations table
+    const [result] = await pool.execute(
+      `INSERT INTO user_registrations 
+        (user_id, email, password, first_name, last_name, phone, country_code, country, role, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
+      [user.userId, user.email, hashedPassword, user.firstName, user.lastName, user.phone, user.countryCode, user.country, user.role]
+    );
 
     // Generate JWT
     const token = jwt.sign(
@@ -115,9 +139,10 @@ router.post('/register', async (req, res) => {
     const { password: _, ...safeUser } = user;
     res.status(201).json({
       success: true,
-      message: 'Registration successful',
-      token,
+      message: 'Registration submitted successfully! Your account is pending admin approval. You will be notified once approved.',
       user: safeUser,
+      token,
+      status: 'pending'
     });
   } catch (err) {
     console.error('Registration error:', err);

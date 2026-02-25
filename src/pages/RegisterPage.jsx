@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { authAPI } from '../services/api'
+import CountryPhoneInput from '../components/CountryPhoneInput.jsx'
 import { Eye, EyeOff, UserPlus, Shield, Lock, Building } from 'lucide-react'
 
 export default function RegisterPage() {
@@ -14,6 +15,8 @@ export default function RegisterPage() {
     email: '',
     phone: '',
     countryCode: '+95',
+    country: 'Myanmar',
+    phoneValid: false,
     password: '',
     confirmPassword: ''
   })
@@ -206,31 +209,23 @@ export default function RegisterPage() {
             </div>
 
             {/* Phone */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1.5">
-                Phone Number (Optional)
-              </label>
-              <div className="flex gap-2">
-                <select
-                  name="countryCode"
-                  value={formData.countryCode}
-                  onChange={handleChange}
-                  className="px-3 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all text-gray-800 text-sm"
-                >
-                  <option value="+95">+95</option>
-                  <option value="+66">+66</option>
-                  <option value="+1">+1</option>
-                </select>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="0912345678"
-                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all text-gray-800 placeholder-gray-300 text-sm"
-                />
-              </div>
-            </div>
+            <CountryPhoneInput
+              value={{
+                countryCode: formData.countryCode,
+                phone: formData.phone,
+                country: formData.country
+              }}
+              onChange={(phoneData) => {
+                setFormData(prev => ({
+                  ...prev,
+                  ...phoneData,
+                  phoneValid: phoneData.phone !== '' && phoneData.phone !== undefined
+                }))
+                if (error) setError('')
+              }}
+              error={error}
+              setError={setError}
+            />
 
             {/* Password */}
             <div>

@@ -18,6 +18,7 @@ import flutterAuthRoutes from './routes/flutter-auth.js';
 import adminRoutes from './routes/admin.js';
 import salesRoutes from './routes/sales.js';
 import testSetupRoutes from './routes/test-setup.js';
+import approvalRoutes from './routes/approval.js';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -38,6 +39,7 @@ app.use('/api/auth', flutterAuthRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/sales', salesRoutes);
 app.use('/api/test', testSetupRoutes);
+app.use('/api/approval', approvalRoutes);
 
 // ── Health check ──
 app.get('/api/health', (req, res) => {
