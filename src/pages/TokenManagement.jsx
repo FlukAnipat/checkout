@@ -16,7 +16,7 @@ export default function TokenManagement() {
 
   // Copy registration URL
   const copyRegistrationUrl = (token) => {
-    const url = `https://hsk.shwe-flash.com/#/register/${token}`
+    const url = `https://checkout-tau-two.vercel.app/#/register/${token}`
     navigator.clipboard.writeText(url)
     setCopied(token)
     setTimeout(() => setCopied(''), 2000)
@@ -165,13 +165,13 @@ export default function TokenManagement() {
         <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
           <li>Sales person contacts you for registration</li>
           <li>Generate a unique token or use existing one</li>
-          <li>Copy the registration URL (hsk.shwe-flash.com) and send to the sales person</li>
+          <li>Copy the registration URL and send to the sales person</li>
           <li>They can register using that URL</li>
           <li>After registration, they get access to sales dashboard</li>
         </ol>
         <div className="mt-3 p-3 bg-blue-100 rounded-lg">
           <p className="text-xs text-blue-700">
-            <strong>URL Format:</strong> https://hsk.shwe-flash.com/#/register/[token]
+            <strong>URL Format:</strong> https://checkout-tau-two.vercel.app/#/register/[token]
           </p>
         </div>
       </div>
