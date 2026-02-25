@@ -642,6 +642,9 @@ export async function getSalesCustomers(salesPersonId) {
 // 🔧 DATABASE UTILITIES
 // ═══════════════════════════════════════════════════════════════════════════
 
+// Export pool for use in other modules
+export { pool };
+
 export async function closeDatabase() {
   await pool.end();
   console.log('Database connection pool closed');
