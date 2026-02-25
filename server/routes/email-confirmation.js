@@ -68,12 +68,16 @@ router.post('/send-confirmation', async (req, res) => {
     
     // Send real email using Resend API (Free Tier: 3,000 emails/month)
     try {
+      console.log('🔧 Debug: Starting Resend API...');
+      console.log('🔧 Debug: RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
+      
       const { Resend } = require('resend');
       
       const resend = new Resend(process.env.RESEND_API_KEY);
+      console.log('🔧 Debug: Resend client created');
 
       // Send email
-      await resend.emails.send({
+      const result = await resend.emails.send({
         from: 'onboarding@resend.dev',
         to: normalizedEmail,
         subject: 'Confirm Your Email Address - HSK Shwe Flash',
@@ -121,9 +125,16 @@ router.post('/send-confirmation', async (req, res) => {
         `
       });
       
+      console.log('🔧 Debug: Email send result:', result);
       console.log(`📧 Email sent successfully to ${normalizedEmail}`);
     } catch (emailError) {
-      console.error('Email sending error:', emailError);
+      console.error('🔧 Debug: Email sending error:', emailError);
+      console.error('🔧 Debug: Error details:', {
+        message: emailError.message,
+        code: emailError.code,
+        status: emailError.status,
+        stack: emailError.stack
+      });
       // Fallback to mock for development
       console.log(`📧 Confirmation link for ${normalizedEmail}: ${confirmationLink}`);
       console.log(`📧 Token: ${token} (expires: ${expiresAt})`);
