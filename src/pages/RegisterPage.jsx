@@ -29,12 +29,17 @@ export default function RegisterPage() {
       return
     }
 
-    // Simple token validation (in production, validate against database)
-    const validTokens = ['sales2024', 'invite123', 'register456']
-    if (validTokens.includes(token)) {
+    // Token validation for sales registration
+    if (token === 'salesHSK') {
+      // Special token for HSK sales team
       setIsAuthorized(true)
     } else {
-      setTokenError('Invalid or expired registration token.')
+      // Check if token starts with 'sales_' (for future dynamic tokens)
+      if (token.startsWith('sales_')) {
+        setIsAuthorized(true)
+      } else {
+        setTokenError('Invalid registration token. Please contact your app administrator.')
+      }
     }
   }, [token])
 

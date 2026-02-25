@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminAPI } from '../services/api'
+import TokenManagement from './TokenManagement'
 import { 
   BarChart3, Users, DollarSign, Tag, LogOut, Plus, 
-  CreditCard, Shield, RefreshCw, BookOpen, X, ChevronDown, UserCheck
+  CreditCard, Shield, RefreshCw, BookOpen, X, ChevronDown, UserCheck, Link
 } from 'lucide-react'
 
 function formatPrice(amount) {
@@ -140,7 +141,7 @@ export default function AdminDashboard() {
 
         {/* Tabs */}
         <div className="flex gap-1 bg-white rounded-xl p-1 border border-gray-100">
-          {['overview', 'users', 'payments', 'promo'].map(tab => (
+          {['overview', 'users', 'payments', 'promo', 'tokens'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -150,7 +151,7 @@ export default function AdminDashboard() {
                   : 'text-gray-400 hover:text-gray-600'
               }`}
             >
-              {tab === 'overview' ? 'Overview' : tab === 'users' ? 'Users' : tab === 'payments' ? 'Payments' : 'Promo Codes'}
+              {tab === 'overview' ? 'Overview' : tab === 'users' ? 'Users' : tab === 'payments' ? 'Payments' : tab === 'promo' ? 'Promo Codes' : 'Tokens'}
             </button>
           ))}
         </div>
@@ -411,6 +412,11 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+        {/* Tokens Tab */}
+        {activeTab === 'tokens' && (
+          <TokenManagement />
+        )}
     </div>
   )
 }
