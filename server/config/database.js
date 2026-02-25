@@ -35,9 +35,6 @@ if (railwayUrl && railwayUrl.includes('mysql://')) {
     connectionLimit: 5, // Reduce for Railway
     queueLimit: 0,
     ssl: { rejectUnauthorized: false },
-    acquireTimeout: 60000, // 60 seconds
-    timeout: 60000, // 60 seconds
-    reconnect: true, // Auto reconnect
     idleTimeout: 300000, // 5 minutes
     enableKeepAlive: true,
     keepAliveInitialDelay: 0
