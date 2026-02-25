@@ -16,7 +16,11 @@ export default function TokenManagement() {
 
   // Copy registration URL
   const copyRegistrationUrl = (token) => {
-    const url = `https://checkout-tau-two.vercel.app/#/register/${token}`
+    // Change this URL when you update your domain
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://hsk-shwe-flash.vercel.app'  // <-- Updated to new domain
+      : 'http://localhost:5173'
+    const url = `${baseUrl}/#/register/${token}`
     navigator.clipboard.writeText(url)
     setCopied(token)
     setTimeout(() => setCopied(''), 2000)
@@ -171,7 +175,7 @@ export default function TokenManagement() {
         </ol>
         <div className="mt-3 p-3 bg-blue-100 rounded-lg">
           <p className="text-xs text-blue-700">
-            <strong>URL Format:</strong> https://checkout-tau-two.vercel.app/#/register/[token]
+            <strong>URL Format:</strong> https://hsk-shwe-flash.vercel.app/#/register/[token]
           </p>
         </div>
       </div>
