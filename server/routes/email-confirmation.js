@@ -91,46 +91,75 @@ router.post('/send-confirmation', async (req, res) => {
         to: normalizedEmail,
         subject: 'Confirm Your Email Address - HSK Shwe Flash',
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 30px;">
-              <h1 style="color: white; margin: 0; font-size: 24px;">HSK Shwe Flash</h1>
-              <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Sales Registration</p>
-            </div>
-            
-            <div style="background: #f8f9fa; padding: 30px; border-radius: 10px; margin-bottom: 30px;">
-              <h2 style="color: #333; margin: 0 0 20px 0; font-size: 20px;">Confirm Your Email Address</h2>
-              <p style="color: #666; margin: 0 0 20px 0; line-height: 1.6;">
-                Hi ${firstName},<br><br>
-                Thank you for registering as a sales person for HSK Shwe Flash. Please click the button below to confirm your email address and complete your registration.
-              </p>
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Confirm Your Email - HSK Shwe Flash</title>
+          </head>
+          <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+            <div style="max-width: 600px; margin: 40px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
               
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${confirmationLink}" 
-                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                          color: white; 
-                          padding: 15px 30px; 
-                          text-decoration: none; 
-                          border-radius: 5px; 
-                          font-weight: bold; 
-                          display: inline-block;">
-                  Confirm Email Address
-                </a>
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%); padding: 40px 30px; text-align: center;">
+                <div style="font-size: 32px; font-weight: bold; color: white; margin-bottom: 8px;">🇨🇳 HSK</div>
+                <div style="font-size: 24px; color: white; margin-bottom: 5px;">Shwe Flash</div>
+                <div style="font-size: 16px; color: rgba(255,255,255,0.9);">Chinese Learning Platform</div>
               </div>
               
-              <p style="color: #666; margin: 20px 0 0 0; font-size: 14px; line-height: 1.6;">
-                If the button above doesn't work, you can copy and paste this link into your browser:<br>
-                <a href="${confirmationLink}" style="color: #667eea; word-break: break-all;">${confirmationLink}</a>
-              </p>
+              <!-- Content -->
+              <div style="padding: 40px 30px;">
+                <h2 style="color: #2c3e50; margin: 0 0 20px 0; font-size: 24px; text-align: center;">📧 Confirm Your Email Address</h2>
+                
+                <p style="color: #5a6c7d; margin: 0 0 25px 0; font-size: 16px; line-height: 1.6;">Hi ${firstName},</p>
+                
+                <p style="color: #5a6c7d; margin: 0 0 30px 0; font-size: 16px; line-height: 1.6;">Thank you for joining HSK Shwe Flash! We're excited to help you on your Chinese learning journey. Please confirm your email address to activate your account.</p>
+                
+                <!-- Benefits -->
+                <div style="background: #f8f9fa; border-left: 4px solid #4ECDC4; padding: 20px; margin: 30px 0; border-radius: 0 8px 8px 0;">
+                  <h3 style="color: #2c3e50; margin: 0 0 15px 0; font-size: 18px;">🎯 What you'll get:</h3>
+                  <ul style="color: #5a6c7d; margin: 0; padding-left: 20px; line-height: 1.8;">
+                    <li>Access to HSK 1-9 vocabulary flashcards</li>
+                    <li>Interactive learning sessions</li>
+                    <li>Progress tracking and analytics</li>
+                    <li>Mobile app access</li>
+                  </ul>
+                </div>
+                
+                <!-- CTA Button -->
+                <div style="text-align: center; margin: 35px 0;">
+                  <a href="${confirmationLink}" 
+                     style="display: inline-block; background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%); color: white; padding: 18px 40px; text-decoration: none; border-radius: 30px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3); transition: all 0.3s ease;">
+                    ✨ Confirm Email Address
+                  </a>
+                </div>
+                
+                <!-- Fallback Link -->
+                <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; margin: 30px 0;">
+                  <p style="color: #6c757d; margin: 0 0 10px 0; font-size: 14px; text-align: center;">🔗 Or copy and paste this link:</p>
+                  <p style="color: #495057; margin: 0; font-size: 12px; word-break: break-all; text-align: center; font-family: monospace;">${confirmationLink}</p>
+                </div>
+              </div>
               
-              <p style="color: #999; margin: 20px 0 0 0; font-size: 12px;">
-                This link expires in 24 hours. If you didn't request this email, please ignore it.
-              </p>
+              <!-- Footer -->
+              <div style="background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
+                <p style="color: #6c757d; margin: 0 0 15px 0; font-size: 14px;">
+                  ⏰ This link expires in 24 hours
+                </p>
+                <p style="color: #6c757d; margin: 0 0 10px 0; font-size: 14px;">
+                  If you didn't request this email, please ignore it
+                </p>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+                  <p style="color: #495057; margin: 0; font-size: 14px; font-weight: 600;">HSK Shwe Flash</p>
+                  <p style="color: #6c757d; margin: 5px 0 0 0; font-size: 12px;">Master Chinese with Flash</p>
+                  <p style="color: #adb5bd; margin: 15px 0 0 0; font-size: 11px;">© 2024 HSK Shwe Flash. All rights reserved.</p>
+                </div>
+              </div>
+              
             </div>
-            
-            <div style="text-align: center; color: #999; font-size: 12px;">
-              <p>&copy; ${new Date().getFullYear()} HSK Shwe Flash. All rights reserved.</p>
-            </div>
-          </div>
+          </body>
+          </html>
         `
       });
       
