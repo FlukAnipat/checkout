@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { vocabAPI } from '../../services/api'
 import { ArrowLeft, RotateCcw, ChevronLeft, ChevronRight, Shuffle, BookmarkCheck, Bookmark, Check, X as XIcon } from 'lucide-react'
+import WebLayout from '../../components/WebLayout'
 
 const HSK_COLORS = {
   1: { gradient: 'from-red-500 to-red-600' },
@@ -25,7 +26,8 @@ export default function FlashcardPage() {
   const [savedWords, setSavedWords] = useState(new Set())
   const [learned, setLearned] = useState(new Set())
 
-  const user = JSON.parse(localStorage.getItem('sf_user') || '{}')
+  const token = localStorage.getItem('sf_token')
+  const isGuest = !token
 
   useEffect(() => {
     loadWords()
@@ -76,6 +78,7 @@ export default function FlashcardPage() {
   }
 
   const toggleSave = () => {
+    if (isGuest) { navigate('/login'); return }
     if (!currentWord) return
     const newSaved = new Set(savedWords)
     if (newSaved.has(currentWord.id)) {
@@ -88,147 +91,149 @@ export default function FlashcardPage() {
 
   if (loading) {
     return (
-      <div className="app-container flex items-center justify-center min-h-screen">
-        <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
-      </div>
+      <WebLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </WebLayout>
     )
   }
 
   if (!currentWord) {
     return (
-      <div className="app-container flex items-center justify-center min-h-screen px-5">
-        <div className="text-center">
-          <p className="text-gray-500 text-sm mb-4">No words available for this level</p>
-          <button onClick={() => navigate('/dashboard')} className="px-6 py-3 rounded-xl gradient-primary text-white font-bold text-sm cursor-pointer">
-            Back to Dashboard
-          </button>
+      <WebLayout>
+        <div className="flex items-center justify-center min-h-[60vh] px-5">
+          <div className="text-center">
+            <p className="text-gray-500 text-sm mb-4">No words available for this level</p>
+            <button onClick={() => navigate('/dashboard')} className="px-6 py-3 rounded-xl gradient-primary text-white font-bold text-sm cursor-pointer">
+              Back to Dashboard
+            </button>
+          </div>
         </div>
-      </div>
+      </WebLayout>
     )
   }
 
   return (
-    <div className="app-container min-h-screen flex flex-col">
-      {/* Header */}
-      <div className="px-5 pt-6 pb-3">
-        <div className="flex items-center justify-between">
-          <button onClick={() => navigate(`/hsk/${levelNum}`)}
-            className="w-10 h-10 rounded-xl bg-white shadow-sm border border-gray-100 flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer">
-            <ArrowLeft size={18} className="text-gray-600" />
-          </button>
-          <div className="text-center">
-            <h1 className="text-base font-black text-gray-900">HSK {levelNum} Flashcards</h1>
-            <p className="text-xs text-gray-400">{currentIndex + 1} / {words.length}</p>
-          </div>
-          <div className="flex gap-1.5">
-            <button onClick={shuffleWords}
-              className="w-10 h-10 rounded-xl bg-white shadow-sm border border-gray-100 flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer">
-              <Shuffle size={16} className="text-gray-500" />
+    <WebLayout>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate(`/hsk/${levelNum}`)}
+              className="w-10 h-10 rounded-xl bg-white shadow-sm border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer">
+              <ArrowLeft size={18} className="text-gray-600" />
             </button>
+            <div>
+              <h1 className="text-lg font-black text-gray-900">HSK {levelNum} Flashcards</h1>
+              <p className="text-sm text-gray-400">{currentIndex + 1} of {words.length}</p>
+            </div>
           </div>
+          <button onClick={shuffleWords}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-200 text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors cursor-pointer">
+            <Shuffle size={16} />
+            Shuffle
+          </button>
         </div>
 
         {/* Progress Bar */}
-        <div className="mt-4 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-8">
           <div
             className={`h-full rounded-full bg-gradient-to-r ${colors.gradient} transition-all duration-300`}
             style={{ width: `${progress}%` }}
           />
         </div>
-      </div>
 
-      {/* Flashcard */}
-      <div className="flex-1 flex items-center justify-center px-5 py-4">
-        <button
-          onClick={() => setIsFlipped(!isFlipped)}
-          className="w-full max-w-sm aspect-[3/4] rounded-3xl shadow-lg border border-gray-100 bg-white flex flex-col items-center justify-center p-8 cursor-pointer transition-all duration-300 hover:shadow-xl active:scale-[0.98]"
-          style={{ perspective: '1000px' }}
-        >
-          {!isFlipped ? (
-            /* Front - Hanzi */
-            <div className="text-center animate-fade-in">
-              <p className="text-6xl font-bold text-gray-900 mb-4">{currentWord.hanzi}</p>
-              <p className="text-lg text-gray-400">{currentWord.pinyin}</p>
-              <p className="text-xs text-gray-300 mt-8">Tap to reveal meaning</p>
-            </div>
-          ) : (
-            /* Back - Meaning */
-            <div className="text-center animate-fade-in">
-              <p className="text-4xl font-bold text-gray-900 mb-2">{currentWord.hanzi}</p>
-              <p className="text-sm text-gray-400 mb-6">{currentWord.pinyin}</p>
-              <div className="space-y-3 w-full">
-                {currentWord.meaningEn && (
-                  <div className="px-4 py-2.5 rounded-xl bg-blue-50">
-                    <span className="text-xs font-bold text-blue-400 block mb-0.5">English</span>
-                    <span className="text-sm font-medium text-blue-700">{currentWord.meaningEn}</span>
-                  </div>
-                )}
-                {currentWord.meaningMy && (
-                  <div className="px-4 py-2.5 rounded-xl bg-green-50">
-                    <span className="text-xs font-bold text-green-400 block mb-0.5">Myanmar</span>
-                    <span className="text-sm font-medium text-green-700">{currentWord.meaningMy}</span>
-                  </div>
-                )}
-                {currentWord.meaning && currentWord.meaning !== currentWord.meaningEn && (
-                  <div className="px-4 py-2.5 rounded-xl bg-purple-50">
-                    <span className="text-xs font-bold text-purple-400 block mb-0.5">Thai</span>
-                    <span className="text-sm font-medium text-purple-700">{currentWord.meaning}</span>
-                  </div>
-                )}
+        {/* Flashcard - centered */}
+        <div className="flex items-center justify-center mb-8">
+          <button
+            onClick={() => setIsFlipped(!isFlipped)}
+            className="w-full max-w-md aspect-[3/4] rounded-3xl shadow-lg border border-gray-100 bg-white flex flex-col items-center justify-center p-8 cursor-pointer transition-all duration-300 hover:shadow-xl active:scale-[0.98]"
+          >
+            {!isFlipped ? (
+              <div className="text-center animate-fade-in">
+                <p className="text-6xl font-bold text-gray-900 mb-4">{currentWord.hanzi}</p>
+                <p className="text-lg text-gray-400">{currentWord.pinyin}</p>
+                <p className="text-xs text-gray-300 mt-8">Click to reveal meaning</p>
               </div>
-              <p className="text-xs text-gray-300 mt-6">Tap to flip back</p>
-            </div>
-          )}
-        </button>
+            ) : (
+              <div className="text-center animate-fade-in w-full">
+                <p className="text-4xl font-bold text-gray-900 mb-2">{currentWord.hanzi}</p>
+                <p className="text-sm text-gray-400 mb-6">{currentWord.pinyin}</p>
+                <div className="space-y-3 w-full">
+                  {currentWord.meaningEn && (
+                    <div className="px-4 py-2.5 rounded-xl bg-blue-50">
+                      <span className="text-xs font-bold text-blue-400 block mb-0.5">English</span>
+                      <span className="text-sm font-medium text-blue-700">{currentWord.meaningEn}</span>
+                    </div>
+                  )}
+                  {currentWord.meaningMy && (
+                    <div className="px-4 py-2.5 rounded-xl bg-green-50">
+                      <span className="text-xs font-bold text-green-400 block mb-0.5">Myanmar</span>
+                      <span className="text-sm font-medium text-green-700">{currentWord.meaningMy}</span>
+                    </div>
+                  )}
+                  {currentWord.meaning && currentWord.meaning !== currentWord.meaningEn && (
+                    <div className="px-4 py-2.5 rounded-xl bg-purple-50">
+                      <span className="text-xs font-bold text-purple-400 block mb-0.5">Thai</span>
+                      <span className="text-sm font-medium text-purple-700">{currentWord.meaning}</span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-300 mt-6">Click to flip back</p>
+              </div>
+            )}
+          </button>
+        </div>
+
+        {/* Controls */}
+        <div className="space-y-4">
+          {/* Action buttons */}
+          <div className="flex items-center justify-center gap-4">
+            <button onClick={toggleSave}
+              className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer
+                ${!isGuest && savedWords.has(currentWord.id) ? 'bg-amber-50 border-2 border-amber-300 text-amber-500' : 'bg-white border-2 border-gray-200 text-gray-400 hover:border-gray-300'}
+              `}>
+              {!isGuest && savedWords.has(currentWord.id) ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
+            </button>
+
+            <button onClick={() => { setIsFlipped(false); goNext() }}
+              className="w-12 h-12 rounded-2xl bg-red-50 border-2 border-red-200 text-red-400 flex items-center justify-center hover:bg-red-100 transition-all cursor-pointer">
+              <XIcon size={20} />
+            </button>
+
+            <button onClick={markLearned}
+              className="w-12 h-12 rounded-2xl bg-green-50 border-2 border-green-200 text-green-500 flex items-center justify-center hover:bg-green-100 transition-all cursor-pointer">
+              <Check size={20} />
+            </button>
+          </div>
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between">
+            <button onClick={goPrev} disabled={currentIndex === 0}
+              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-white border border-gray-200 text-sm text-gray-600 font-medium disabled:opacity-30 hover:bg-gray-50 transition-colors cursor-pointer disabled:cursor-not-allowed">
+              <ChevronLeft size={16} />
+              Previous
+            </button>
+            <button onClick={() => setIsFlipped(!isFlipped)}
+              className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer">
+              <RotateCcw size={16} className="text-gray-500" />
+            </button>
+            <button onClick={goNext} disabled={currentIndex >= words.length - 1}
+              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-white border border-gray-200 text-sm text-gray-600 font-medium disabled:opacity-30 hover:bg-gray-50 transition-colors cursor-pointer disabled:cursor-not-allowed">
+              Next
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {/* Stats */}
+          <div className="flex items-center justify-center gap-4 text-sm text-gray-400">
+            <span>{learned.size} learned</span>
+            <span>·</span>
+            <span>{savedWords.size} saved</span>
+          </div>
+        </div>
       </div>
-
-      {/* Controls */}
-      <div className="px-5 pb-8 space-y-3">
-        {/* Action buttons */}
-        <div className="flex items-center justify-center gap-4">
-          <button onClick={toggleSave}
-            className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer
-              ${savedWords.has(currentWord.id) ? 'bg-amber-50 border-2 border-amber-300 text-amber-500' : 'bg-white border-2 border-gray-100 text-gray-400 hover:border-gray-200'}
-            `}>
-            {savedWords.has(currentWord.id) ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
-          </button>
-
-          <button onClick={() => { setIsFlipped(false); goNext() }}
-            className="w-12 h-12 rounded-2xl bg-red-50 border-2 border-red-200 text-red-400 flex items-center justify-center hover:bg-red-100 transition-all cursor-pointer">
-            <XIcon size={20} />
-          </button>
-
-          <button onClick={markLearned}
-            className="w-12 h-12 rounded-2xl bg-green-50 border-2 border-green-200 text-green-500 flex items-center justify-center hover:bg-green-100 transition-all cursor-pointer">
-            <Check size={20} />
-          </button>
-        </div>
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between">
-          <button onClick={goPrev} disabled={currentIndex === 0}
-            className="flex items-center gap-1 px-4 py-2.5 rounded-xl bg-white border border-gray-100 text-sm text-gray-600 font-medium disabled:opacity-30 hover:bg-gray-50 transition-colors cursor-pointer disabled:cursor-not-allowed">
-            <ChevronLeft size={16} />
-            Previous
-          </button>
-          <button onClick={() => { setIsFlipped(!isFlipped) }}
-            className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer">
-            <RotateCcw size={16} className="text-gray-500" />
-          </button>
-          <button onClick={goNext} disabled={currentIndex >= words.length - 1}
-            className="flex items-center gap-1 px-4 py-2.5 rounded-xl bg-white border border-gray-100 text-sm text-gray-600 font-medium disabled:opacity-30 hover:bg-gray-50 transition-colors cursor-pointer disabled:cursor-not-allowed">
-            Next
-            <ChevronRight size={16} />
-          </button>
-        </div>
-
-        {/* Stats */}
-        <div className="flex items-center justify-center gap-4 text-xs text-gray-400">
-          <span>{learned.size} learned</span>
-          <span>·</span>
-          <span>{savedWords.size} saved</span>
-        </div>
-      </div>
-    </div>
+    </WebLayout>
   )
 }

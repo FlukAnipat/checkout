@@ -75,11 +75,12 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/confirm-email" element={<ConfirmEmailPage />} />
 
-          {/* User Routes */}
-          <Route path="/dashboard" element={<UserRoute><UserDashboard /></UserRoute>} />
-          <Route path="/hsk/:level" element={<UserRoute><HskLevelPage /></UserRoute>} />
-          <Route path="/flashcard/:level" element={<UserRoute><FlashcardPage /></UserRoute>} />
-          <Route path="/saved" element={<UserRoute><SavedWordsPage /></UserRoute>} />
+          {/* User Routes (accessible by guests too) */}
+          <Route path="/dashboard" element={<UserDashboard />} />
+          <Route path="/hsk/:level" element={<HskLevelPage />} />
+          <Route path="/flashcard/:level" element={<FlashcardPage />} />
+          {/* Protected user routes */}
+          <Route path="/saved" element={<PrivateRoute><SavedWordsPage /></PrivateRoute>} />
           <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
 
           {/* Payment */}

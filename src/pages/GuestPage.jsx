@@ -7,11 +7,15 @@ export default function GuestPage() {
   const [email, setEmail] = useState('')
 
   const handleGetStarted = () => {
-    navigate('/login')
+    navigate('/dashboard')
   }
 
   const handleLogin = () => {
     navigate('/login')
+  }
+
+  const handleRegister = () => {
+    navigate('/register')
   }
 
   const handleDownloadApp = () => {
