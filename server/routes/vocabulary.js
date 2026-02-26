@@ -16,6 +16,9 @@ import {
   syncUserSettings,
   getUserAchievements,
   unlockAchievement,
+  searchVocabulary,
+  getUserDailyGoalsRange,
+  getUserLearningSessionsRange,
 } from '../config/database.js';
 
 const router = express.Router();
@@ -66,7 +69,38 @@ router.get('/hsk/:level', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 👤 GET /api/vocab/user/:userId/profile — Get user profile + stats
+// � GET /api/vocab/search?q=xxx — Search vocabulary across all levels
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/search', async (req, res) => {
+  try {
+    const query = req.query.q;
+    if (!query || query.trim().length === 0) {
+      return res.json({ results: [] });
+    }
+    const words = await searchVocabulary(query.trim());
+    res.json({
+      query: query.trim(),
+      count: words.length,
+      results: words.map(w => ({
+        id: w.vocab_id,
+        hskLevel: w.hsk_level,
+        hanzi: w.hanzi,
+        pinyin: w.pinyin,
+        meaning: w.meaning || '',
+        meaningEn: w.meaning_en || '',
+        meaningMy: w.meaning_my || '',
+        example: w.example || '',
+        audioAsset: w.audio_asset || '',
+      })),
+    });
+  } catch (err) {
+    console.error('Search vocabulary error:', err);
+    res.status(500).json({ error: 'Failed to search vocabulary' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// �👤 GET /api/vocab/user/:userId/profile — Get user profile + stats
 // ═══════════════════════════════════════════════════════════════════════════
 router.get('/user/:userId/profile', async (req, res) => {
   try {
@@ -210,11 +244,33 @@ router.post('/sync', async (req, res) => {
 router.get('/user/:userId/goals', async (req, res) => {
   try {
     const { userId } = req.params;
+    const { start, end } = req.query;
+    
+    if (start && end) {
+      const goals = await getUserDailyGoalsRange(userId, start, end);
+      return res.json({ success: true, goals });
+    }
+    
     const goals = await getUserDailyGoals(userId);
     res.json({ success: true, goals });
   } catch (err) {
     console.error('Get daily goals error:', err);
     res.status(500).json({ error: 'Failed to fetch daily goals' });
+  }
+});
+
+router.get('/user/:userId/sessions-range', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { start, end } = req.query;
+    if (!start || !end) {
+      return res.status(400).json({ error: 'start and end dates are required' });
+    }
+    const sessions = await getUserLearningSessionsRange(userId, start, end);
+    res.json({ success: true, sessions });
+  } catch (err) {
+    console.error('Get learning sessions range error:', err);
+    res.status(500).json({ error: 'Failed to fetch learning sessions' });
   }
 });
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { vocabAPI } from '../../services/api'
-import { ArrowLeft, RotateCcw, ChevronLeft, ChevronRight, Shuffle, BookmarkCheck, Bookmark, Check, X as XIcon } from 'lucide-react'
+import { ArrowLeft, RotateCcw, ChevronLeft, ChevronRight, Shuffle, BookmarkCheck, Bookmark, Check, X as XIcon, Volume2, Lock } from 'lucide-react'
 import WebLayout from '../../components/WebLayout'
 
 const HSK_COLORS = {
@@ -26,8 +26,13 @@ export default function FlashcardPage() {
   const [savedWords, setSavedWords] = useState(new Set())
   const [learned, setLearned] = useState(new Set())
 
+  const FREE_WORD_LIMIT = 20
+
   const token = localStorage.getItem('sf_token')
   const isGuest = !token
+  const user = !isGuest ? JSON.parse(localStorage.getItem('sf_user') || '{}') : {}
+  const isPaid = user?.is_paid || user?.isPaid || false
+  const isLimited = isGuest || !isPaid
 
   useEffect(() => {
     loadWords()
@@ -36,11 +41,22 @@ export default function FlashcardPage() {
   const loadWords = async () => {
     try {
       const res = await vocabAPI.getByLevel(levelNum)
-      setWords(res.data.words || [])
+      const allWords = res.data.words || []
+      setWords(isLimited ? allWords.slice(0, FREE_WORD_LIMIT) : allWords)
     } catch (err) {
       console.error('Failed to load words:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const speakChinese = (text) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.lang = 'zh-CN'
+      utterance.rate = 0.8
+      window.speechSynthesis.speak(utterance)
     }
   }
 
@@ -153,12 +169,26 @@ export default function FlashcardPage() {
             {!isFlipped ? (
               <div className="text-center animate-fade-in">
                 <p className="text-6xl font-bold text-gray-900 mb-4">{currentWord.hanzi}</p>
-                <p className="text-lg text-gray-400">{currentWord.pinyin}</p>
-                <p className="text-xs text-gray-300 mt-8">Click to reveal meaning</p>
+                <p className="text-lg text-gray-400 mb-4">{currentWord.pinyin}</p>
+                <button
+                  onClick={(e) => { e.stopPropagation(); speakChinese(currentWord.hanzi) }}
+                  className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer mx-auto mb-4"
+                  title="Listen to pronunciation">
+                  <Volume2 size={18} className="text-blue-500" />
+                </button>
+                <p className="text-xs text-gray-300">Click to reveal meaning</p>
               </div>
             ) : (
               <div className="text-center animate-fade-in w-full">
-                <p className="text-4xl font-bold text-gray-900 mb-2">{currentWord.hanzi}</p>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <p className="text-4xl font-bold text-gray-900">{currentWord.hanzi}</p>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); speakChinese(currentWord.hanzi) }}
+                    className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer flex-shrink-0"
+                    title="Listen">
+                    <Volume2 size={14} className="text-blue-500" />
+                  </button>
+                </div>
                 <p className="text-sm text-gray-400 mb-6">{currentWord.pinyin}</p>
                 <div className="space-y-3 w-full">
                   {currentWord.meaningEn && (

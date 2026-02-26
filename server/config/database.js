@@ -670,6 +670,48 @@ export async function getSalesCustomers(salesPersonId) {
 // 🔧 DATABASE UTILITIES
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════════════════
+// 🔍 VOCABULARY SEARCH
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function searchVocabulary(query) {
+  const searchTerm = `%${query}%`;
+  const [rows] = await pool.execute(
+    `SELECT * FROM vocabulary 
+     WHERE hanzi LIKE ? OR pinyin LIKE ? OR meaning LIKE ? OR meaning_en LIKE ? OR meaning_my LIKE ?
+     ORDER BY hsk_level ASC, sort_order ASC
+     LIMIT 50`,
+    [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]
+  );
+  return rows;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 📅 DAILY GOALS (extended for web)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function getUserDailyGoalsRange(userId, startDate, endDate) {
+  const [rows] = await pool.execute(
+    `SELECT goal_date, target_cards, completed_cards, is_completed 
+     FROM daily_goals 
+     WHERE user_id = ? AND goal_date BETWEEN ? AND ?
+     ORDER BY goal_date ASC`,
+    [userId, startDate, endDate]
+  );
+  return rows;
+}
+
+export async function getUserLearningSessionsRange(userId, startDate, endDate) {
+  const [rows] = await pool.execute(
+    `SELECT session_date, learned_cards, minutes_spent, hsk_level 
+     FROM learning_sessions 
+     WHERE user_id = ? AND session_date BETWEEN ? AND ?
+     ORDER BY session_date ASC`,
+    [userId, startDate, endDate]
+  );
+  return rows;
+}
+
 // Export pool for use in other modules
 export { pool };
 

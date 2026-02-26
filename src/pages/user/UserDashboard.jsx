@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { vocabAPI } from '../../services/api'
-import { Search, Crown, Lock, BookOpen, Play, Download, X, Sparkles } from 'lucide-react'
+import { Search, Crown, Lock, BookOpen, Play, Download, X, Sparkles, Volume2 } from 'lucide-react'
 import WebLayout from '../../components/WebLayout'
 
 const HSK_COLORS = {
@@ -22,6 +22,9 @@ export default function UserDashboard() {
   const [levels, setLevels] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [searching, setSearching] = useState(false)
+  const [searchTimeout, setSearchTimeoutId] = useState(null)
 
   const token = localStorage.getItem('sf_token')
   const isGuest = !token
@@ -48,6 +51,39 @@ export default function UserDashboard() {
 
   const isPaid = user?.is_paid || user?.isPaid || false
   const firstName = user?.first_name || user?.firstName || 'Guest'
+
+  const handleSearch = (query) => {
+    setSearchQuery(query)
+    if (searchTimeout) clearTimeout(searchTimeout)
+    if (!query.trim()) {
+      setSearchResults([])
+      setSearching(false)
+      return
+    }
+    setSearching(true)
+    const tid = setTimeout(async () => {
+      try {
+        const res = await vocabAPI.search(query.trim())
+        setSearchResults(res.data.results || [])
+      } catch (err) {
+        console.error('Search failed:', err)
+        setSearchResults([])
+      } finally {
+        setSearching(false)
+      }
+    }, 400)
+    setSearchTimeoutId(tid)
+  }
+
+  const speakChinese = (text) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.lang = 'zh-CN'
+      utterance.rate = 0.8
+      window.speechSynthesis.speak(utterance)
+    }
+  }
 
   const handleLevelClick = (level) => {
     if (isGuest && level > 1) {
@@ -120,23 +156,77 @@ export default function UserDashboard() {
         </div>
 
         {/* Search */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
+        <div className="mb-6 relative">
+          <div className="relative max-w-lg">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search HSK levels..."
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Search vocabulary (hanzi, pinyin, or meaning)..."
               className="w-full pl-11 pr-10 py-3 rounded-xl bg-white border border-gray-200 text-sm focus:border-primary-300 focus:ring-2 focus:ring-primary-500/10 outline-none transition-all"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')}
+              <button onClick={() => { setSearchQuery(''); setSearchResults([]) }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer">
                 <X size={18} />
               </button>
             )}
           </div>
+
+          {/* Search Results Dropdown */}
+          {searchQuery.trim() && (
+            <div className="absolute left-0 right-0 top-full mt-2 max-w-lg bg-white rounded-2xl shadow-xl border border-gray-200 z-40 max-h-[60vh] overflow-y-auto">
+              {searching ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="py-8 text-center text-sm text-gray-400">No results found for "{searchQuery}"</div>
+              ) : (
+                <>
+                  <div className="px-4 py-3 border-b border-gray-100 text-xs font-medium text-gray-400">
+                    {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
+                  </div>
+                  {searchResults.map((word) => {
+                    const c = HSK_COLORS[word.hskLevel] || HSK_COLORS[1]
+                    return (
+                      <div key={word.id}
+                        className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
+                        onClick={() => { setSearchQuery(''); setSearchResults([]); navigate(`/hsk/${word.hskLevel}`) }}>
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${c.light} ${c.text}`}>
+                              HSK {word.hskLevel}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg font-bold text-gray-900">{word.hanzi}</span>
+                              <span className="text-sm text-gray-400">{word.pinyin}</span>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); speakChinese(word.hanzi) }}
+                                className="w-6 h-6 rounded-md bg-blue-50 flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer flex-shrink-0">
+                                <Volume2 size={12} className="text-blue-500" />
+                              </button>
+                            </div>
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                              {word.meaningEn && <span className="text-xs text-gray-600">{word.meaningEn}</span>}
+                              {word.meaningMy && <span className="text-xs text-gray-500">· {word.meaningMy}</span>}
+                              {word.meaning && word.meaning !== word.meaningEn && <span className="text-xs text-gray-500">· {word.meaning}</span>}
+                            </div>
+                            {word.example && (
+                              <p className="text-xs text-gray-400 mt-1 truncate">Example: {word.example}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Section Title */}

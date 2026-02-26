@@ -8,8 +8,8 @@ import {
   CreditCard,
   Smartphone,
   ArrowRight,
+  ArrowLeft,
   Shield,
-  LogOut,
   X,
   Loader2,
   BookOpen,
@@ -21,6 +21,7 @@ import {
   QrCode,
   Users,
 } from 'lucide-react'
+import WebLayout from '../components/WebLayout'
 
 const FEATURES = [
   { icon: BookOpen, label: 'All HSK Levels (1-7)', desc: '5,000+ vocabulary words' },
@@ -230,26 +231,18 @@ export default function PaymentPage() {
   const formatPrice = (amount) => new Intl.NumberFormat('en-US').format(amount)
 
   return (
-    <div className="min-h-screen px-4 py-6 pb-32">
-      <div className="max-w-lg mx-auto">
+    <WebLayout>
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32">
         {/* Header */}
-        <div className="flex items-center justify-between mb-5 animate-fade-in">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-black text-gray-900 leading-tight">HSK Shwe Flash</h1>
-              <p className="text-xs text-gray-400">Premium Checkout</p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-400 cursor-pointer"
-            title="Logout"
-          >
-            <LogOut size={18} />
+        <div className="flex items-center gap-3 mb-6 animate-fade-in">
+          <button onClick={() => navigate('/dashboard')}
+            className="w-10 h-10 rounded-xl bg-white shadow-sm border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer">
+            <ArrowLeft size={18} className="text-gray-600" />
           </button>
+          <div>
+            <h1 className="text-2xl font-black text-gray-900">Premium Checkout</h1>
+            <p className="text-sm text-gray-500">Unlock all HSK levels and features</p>
+          </div>
         </div>
 
         {/* Price Hero */}
@@ -563,7 +556,7 @@ export default function PaymentPage() {
 
         {/* Sticky Checkout Button */}
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-100 p-4 z-50">
-          <div className="max-w-lg mx-auto">
+          <div className="max-w-2xl mx-auto">
             <button
               onClick={handleCheckout}
               disabled={checkoutLoading}
@@ -598,6 +591,6 @@ export default function PaymentPage() {
           </div>
         </div>
       </div>
-    </div>
+    </WebLayout>
   )
 }

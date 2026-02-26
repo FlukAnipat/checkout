@@ -16,6 +16,7 @@ const HskLevelPage = lazy(() => import('./pages/user/HskLevelPage'))
 const FlashcardPage = lazy(() => import('./pages/user/FlashcardPage'))
 const SavedWordsPage = lazy(() => import('./pages/user/SavedWordsPage'))
 const ProfilePage = lazy(() => import('./pages/user/ProfilePage'))
+const ProgressPage = lazy(() => import('./pages/user/ProgressPage'))
 
 // Sales & Admin
 const SalesDashboard = lazy(() => import('./pages/SalesDashboard'))
@@ -81,6 +82,7 @@ export default function App() {
           <Route path="/flashcard/:level" element={<FlashcardPage />} />
           {/* Protected user routes */}
           <Route path="/saved" element={<PrivateRoute><SavedWordsPage /></PrivateRoute>} />
+          <Route path="/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
           <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
 
           {/* Payment */}

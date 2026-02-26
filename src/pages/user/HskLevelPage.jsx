@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { vocabAPI } from '../../services/api'
-import { ArrowLeft, Play, Bookmark, BookmarkCheck, Search, X, LogIn } from 'lucide-react'
+import { ArrowLeft, Play, Bookmark, BookmarkCheck, Search, X, LogIn, Volume2, Lock } from 'lucide-react'
 import WebLayout from '../../components/WebLayout'
 
 const HSK_COLORS = {
@@ -25,9 +25,13 @@ export default function HskLevelPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [savedWords, setSavedWords] = useState(new Set())
 
+  const FREE_WORD_LIMIT = 20
+
   const token = localStorage.getItem('sf_token')
   const isGuest = !token
   const user = !isGuest ? JSON.parse(localStorage.getItem('sf_user') || '{}') : {}
+  const isPaid = user?.is_paid || user?.isPaid || false
+  const isLimited = isGuest || !isPaid
 
   useEffect(() => {
     loadWords()
@@ -42,6 +46,16 @@ export default function HskLevelPage() {
       console.error('Failed to load words:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const speakChinese = (text) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.lang = 'zh-CN'
+      utterance.rate = 0.8
+      window.speechSynthesis.speak(utterance)
     }
   }
 
@@ -140,13 +154,30 @@ export default function HskLevelPage() {
 
       {/* Word Cards Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Limited access banner */}
+        {isLimited && filteredWords.length > FREE_WORD_LIMIT && (
+          <div className="mb-4 rounded-xl bg-amber-50 border border-amber-200 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-center gap-2 flex-1">
+              <Lock size={16} className="text-amber-500 flex-shrink-0" />
+              <p className="text-sm text-amber-700">
+                <span className="font-bold">Free preview:</span> Showing {FREE_WORD_LIMIT} of {words.length} words.
+                {isGuest ? ' Sign up and upgrade to Premium to unlock all words.' : ' Upgrade to Premium to unlock all words.'}
+              </p>
+            </div>
+            <button onClick={() => isGuest ? navigate('/register') : navigate('/payment')}
+              className="px-4 py-2 rounded-lg bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition-colors cursor-pointer flex-shrink-0 self-start">
+              {isGuest ? 'Sign Up' : 'Upgrade'}
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredWords.length === 0 ? (
             <div className="col-span-full bg-white rounded-2xl p-8 shadow-sm text-center">
               <p className="text-gray-400 text-sm">No words found</p>
             </div>
           ) : (
-            filteredWords.map((word, index) => {
+            (isLimited ? filteredWords.slice(0, FREE_WORD_LIMIT) : filteredWords).map((word, index) => {
               const isExpanded = expandedWord === word.id
               const isSaved = savedWords.has(word.id)
 
@@ -158,12 +189,19 @@ export default function HskLevelPage() {
                       <div className={`w-8 h-8 rounded-lg ${colors.light} flex items-center justify-center flex-shrink-0`}>
                         <span className={`text-xs font-bold ${colors.text}`}>{index + 1}</span>
                       </div>
-                      <button onClick={() => toggleSaveWord(word.id)}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer flex-shrink-0
-                          ${isGuest ? 'text-gray-300 hover:text-gray-400' : (isSaved ? 'bg-amber-50 text-amber-500' : 'text-gray-300 hover:text-gray-400')}
-                        `}>
-                        {!isGuest && isSaved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => speakChinese(word.hanzi)}
+                          className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer flex-shrink-0"
+                          title="Listen to pronunciation">
+                          <Volume2 size={14} className="text-blue-500" />
+                        </button>
+                        <button onClick={() => toggleSaveWord(word.id)}
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer flex-shrink-0
+                            ${isGuest ? 'text-gray-300 hover:text-gray-400' : (isSaved ? 'bg-amber-50 text-amber-500' : 'text-gray-300 hover:text-gray-400')}
+                          `}>
+                          {!isGuest && isSaved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
+                        </button>
+                      </div>
                     </div>
 
                     <div className="text-center mb-3">
@@ -215,6 +253,19 @@ export default function HskLevelPage() {
             })
           )}
         </div>
+
+        {/* Upgrade CTA after limited words */}
+        {isLimited && filteredWords.length > FREE_WORD_LIMIT && (
+          <div className="mt-6 rounded-2xl bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 p-6 text-center text-white">
+            <Lock size={24} className="mx-auto mb-3 opacity-80" />
+            <h3 className="text-lg font-bold mb-1">Unlock {words.length - FREE_WORD_LIMIT} More Words</h3>
+            <p className="text-sm text-white/80 mb-4">Upgrade to Premium to access all vocabulary in this level</p>
+            <button onClick={() => isGuest ? navigate('/register') : navigate('/payment')}
+              className="px-6 py-2.5 rounded-xl bg-white text-amber-600 font-bold text-sm hover:bg-white/90 transition-colors cursor-pointer">
+              {isGuest ? 'Sign Up & Upgrade' : 'Upgrade to Premium'}
+            </button>
+          </div>
+        )}
       </div>
     </WebLayout>
   )

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { BookOpen, Crown, LogOut, User, Bookmark, Home, Menu, X, Download, LogIn, UserPlus } from 'lucide-react'
+import { BookOpen, Crown, LogOut, User, Bookmark, Home, Menu, X, Download, LogIn, UserPlus, Calendar } from 'lucide-react'
 
 export default function WebLayout({ children }) {
   const navigate = useNavigate()
@@ -23,6 +23,7 @@ export default function WebLayout({ children }) {
     { path: '/dashboard', label: 'HSK Levels', icon: BookOpen },
   ] : [
     { path: '/dashboard', label: 'HSK Levels', icon: BookOpen },
+    { path: '/progress', label: 'Progress', icon: Calendar },
     { path: '/saved', label: 'Saved Words', icon: Bookmark },
     { path: '/profile', label: 'Profile', icon: User },
   ]
