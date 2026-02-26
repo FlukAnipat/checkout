@@ -190,26 +190,6 @@ export default function FlashcardPage() {
                   </button>
                 </div>
                 <p className="text-sm text-gray-400 mb-6">{currentWord.pinyin}</p>
-                <div className="space-y-3 w-full">
-                  {currentWord.meaningEn && (
-                    <div className="px-4 py-2.5 rounded-xl bg-blue-50">
-                      <span className="text-xs font-bold text-blue-400 block mb-0.5">English</span>
-                      <span className="text-sm font-medium text-blue-700">{currentWord.meaningEn}</span>
-                    </div>
-                  )}
-                  {currentWord.meaningMy && (
-                    <div className="px-4 py-2.5 rounded-xl bg-green-50">
-                      <span className="text-xs font-bold text-green-400 block mb-0.5">Myanmar</span>
-                      <span className="text-sm font-medium text-green-700">{currentWord.meaningMy}</span>
-                    </div>
-                  )}
-                  {currentWord.meaning && currentWord.meaning !== currentWord.meaningEn && (
-                    <div className="px-4 py-2.5 rounded-xl bg-purple-50">
-                      <span className="text-xs font-bold text-purple-400 block mb-0.5">Thai</span>
-                      <span className="text-sm font-medium text-purple-700">{currentWord.meaning}</span>
-                    </div>
-                  )}
-                </div>
                 
                 {/* Example sentences with audio */}
                 {currentWord.example && (
