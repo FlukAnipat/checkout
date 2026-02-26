@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { vocabAPI } from '../../services/api'
-import { ArrowLeft, Bookmark, BookmarkX } from 'lucide-react'
+import { ArrowLeft, Bookmark, BookmarkX, Volume2 } from 'lucide-react'
 import WebLayout from '../../components/WebLayout'
 
 export default function SavedWordsPage() {
@@ -34,6 +34,16 @@ export default function SavedWordsPage() {
       setSavedWords(prev => prev.filter(w => (w.vocab_id || w.vocabId) !== vocabId))
     } catch (err) {
       console.error('Failed to unsave word:', err)
+    }
+  }
+
+  const speakChinese = (text) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.lang = 'zh-CN'
+      utterance.rate = 0.8
+      window.speechSynthesis.speak(utterance)
     }
   }
 
@@ -75,20 +85,28 @@ export default function SavedWordsPage() {
               {savedWords.map((word) => {
                 const vocabId = word.vocab_id || word.vocabId
                 return (
-                  <div key={vocabId} className="bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-4 flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-lg font-bold text-gray-900">{word.hanzi}</span>
-                        <span className="text-xs text-gray-400">{word.pinyin}</span>
+                  <div key={vocabId} className="bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-bold text-gray-900">{word.hanzi}</span>
+                          <span className="text-xs text-gray-400">{word.pinyin}</span>
+                          <button
+                            onClick={() => speakChinese(word.hanzi)}
+                            className="w-7 h-7 rounded-md bg-blue-50 flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer flex-shrink-0"
+                            title="Listen to pronunciation">
+                            <Volume2 size={12} className="text-blue-500" />
+                          </button>
+                        </div>
+                        <p className="text-sm text-gray-500 truncate mt-1">
+                          {word.meaning_en || word.meaningEn || word.meaning}
+                        </p>
                       </div>
-                      <p className="text-sm text-gray-500 truncate mt-0.5">
-                        {word.meaning_en || word.meaningEn || word.meaning}
-                      </p>
+                      <button onClick={() => unsaveWord(vocabId)}
+                        className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-100 transition-colors cursor-pointer flex-shrink-0">
+                        <BookmarkX size={16} />
+                      </button>
                     </div>
-                    <button onClick={() => unsaveWord(vocabId)}
-                      className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-100 transition-colors cursor-pointer flex-shrink-0">
-                      <BookmarkX size={16} />
-                    </button>
                   </div>
                 )
               })}
