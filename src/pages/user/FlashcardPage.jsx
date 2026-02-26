@@ -210,6 +210,35 @@ export default function FlashcardPage() {
                     </div>
                   )}
                 </div>
+                
+                {/* Example sentences with audio */}
+                {currentWord.example && (
+                  <div className="mt-4 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                    <p className="text-xs font-medium text-gray-400 mb-2">Example Sentences</p>
+                    <div className="space-y-2">
+                      {currentWord.example.split('\n').filter(line => line.trim()).map((line, index) => {
+                        // Check if line contains Chinese characters
+                        const hasChinese = /[\u4e00-\u9fff]/.test(line)
+                        return hasChinese ? (
+                          <div key={index} className="flex items-start gap-2">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); speakChinese(line.trim()) }}
+                              className="w-6 h-6 rounded-md bg-blue-50 flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer flex-shrink-0 mt-0.5"
+                              title="Listen to example">
+                              <Volume2 size={10} className="text-blue-500" />
+                            </button>
+                            <span className="text-sm text-gray-700">{line.trim()}</span>
+                          </div>
+                        ) : (
+                          <div key={index} className="pl-8">
+                            <span className="text-xs text-gray-500">{line.trim()}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+                
                 <p className="text-xs text-gray-300 mt-6">Click to flip back</p>
               </div>
             )}
