@@ -7,11 +7,11 @@ SELECT COUNT(*) as count FROM vocabulary WHERE hsk_level = 1;
 
 -- Import HSK 1 vocabulary (first 20 words with examples)
 INSERT IGNORE INTO vocabulary (vocab_id, hsk_level, hanzi, pinyin, meaning, meaning_en, meaning_my, example, sort_order) VALUES
-('hsk1_001', 1, '爱', 'ài', 'love', 'love', 'ချစ်သည်', '1. 我爱你。\nI love you.\nငါမင်းကိုချစ်တယ်။\n\n2. 妈妈爱我。\nMom loves me.\nအမေက ငါ့ကိုချစ်တယ်။\n\n3. 他爱看书。\nHe loves reading books.\nသူ စာဖတ်ရတာကို နှစ်သက်တယ်။', 1),
+('hsk1_001', 1, '爱', 'ài', 'love', 'love', 'ချစ်သည်', '1. 我爱你。\n\n2. 妈妈爱我。\n\n3. 他爱看书。', 1),
 
-('hsk1_002', 1, '爱好', 'ài hào', 'hobby', 'hobby', 'ဝါသနာ', '1. 你的爱好是什么？\nWhat is your hobby?\nမင်းရဲ့ ဝါသနာက ဘာလဲ။\n\n2. 我的爱好是唱歌。\nMy hobby is singing.\nငါ့ရဲ့ ဝါသနာက သီချင်းဆိုခြင်း ဖြစ်တယ်။\n\n3. 他有很多爱好。\nHe has many hobbies.\nသူ့မှာ ဝါသနာတွေ အများကြီးရှိတယ်။', 2),
+('hsk1_002', 1, '爱好', 'ài hào', 'hobby', 'hobby', 'ဝါသနာ', '1. 你的爱好是什么？\n\n2. 我的爱好是唱歌。\n\n3. 他有很多爱好。', 2),
 
-('hsk1_003', 1, '八', 'bā', 'eight', 'eight', 'ရှစ် (ဂဏန်း)', '1. 我有八本书。\nI have eight books.\nငါ့မှာ စာအုပ် ရှစ်အုပ်ရှိတယ်။\n\n2. 今天是八号。\nToday is the 8th.\nဒီနေ့က ရှစ်ရက်နေ့ပဲ။\n\n3. 八点开会。\nMeeting at 8 o\'clock.\nရှစ်နာရီမှာ အစည်းအဝေးတက်ရတယ်။', 3),
+('hsk1_003', 1, '八', 'bā', 'eight', 'eight', 'ရှစ် (ဂဏန်း)', '1. 我有八本书。\n\n2. 今天是八号。\n\n3. 八点开会。', 3),
 
 ('hsk1_004', 1, '爸爸', 'bà ba', 'father', 'father', 'ဖခင်', '1. 这是我爸爸。\nThis is my father.\nဒါက င့်ဖခင်ပဲ။\n\n2. 爸爸在工作。\nDad is working.\nဖေဖေက လုပ်ငန်းလုပ်နေတယ်။\n\n3. 我爱爸爸。\nI love my dad.\nငါ ဖေဖေကိုချစ်တယ်။', 4),
 

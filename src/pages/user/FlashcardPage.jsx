@@ -219,6 +219,7 @@ export default function FlashcardPage() {
                       {currentWord.example.split('\n').filter(line => line.trim()).map((line, index) => {
                         // Check if line contains Chinese characters
                         const hasChinese = /[\u4e00-\u9fff]/.test(line)
+                        // Only show Chinese lines
                         return hasChinese ? (
                           <div key={index} className="flex items-start gap-2">
                             <button
@@ -229,11 +230,7 @@ export default function FlashcardPage() {
                             </button>
                             <span className="text-sm text-gray-700">{line.trim()}</span>
                           </div>
-                        ) : (
-                          <div key={index} className="pl-8">
-                            <span className="text-xs text-gray-500">{line.trim()}</span>
-                          </div>
-                        )
+                        ) : null
                       })}
                     </div>
                   </div>
