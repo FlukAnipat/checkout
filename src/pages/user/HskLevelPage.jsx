@@ -25,7 +25,7 @@ export default function HskLevelPage() {
   const [expandedWord, setExpandedWord] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [savedWords, setSavedWords] = useState(new Set())
-  const { getMeaning, getExample, currentLang, language } = useLanguage()
+  const { getMeaning, getExample, currentLang, language, tr } = useLanguage()
 
   const FREE_WORD_LIMIT = 20
 
@@ -124,7 +124,7 @@ export default function HskLevelPage() {
               </button>
               <div>
                 <h1 className="text-2xl font-black text-white">HSK {levelNum}</h1>
-                <p className="text-sm text-white/70">{words.length} vocabulary words</p>
+                <p className="text-sm text-white/70">{words.length} {tr('vocabularyWords')}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -135,7 +135,7 @@ export default function HskLevelPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search words..."
+                  placeholder={tr('searchWords')}
                   className="w-full pl-9 pr-9 py-2.5 rounded-xl bg-white/15 text-white text-sm placeholder-white/50 border border-white/10 outline-none focus:bg-white/20 transition-all"
                 />
                 {searchQuery && (
@@ -147,7 +147,7 @@ export default function HskLevelPage() {
               <button onClick={() => navigate(`/flashcard/${levelNum}`)}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/20 text-white text-sm font-bold hover:bg-white/30 transition-colors cursor-pointer">
                 <Play size={16} />
-                Flashcards
+                {tr('flashcards')}
               </button>
             </div>
           </div>
@@ -162,13 +162,13 @@ export default function HskLevelPage() {
             <div className="flex items-center gap-2 flex-1">
               <Lock size={16} className="text-amber-500 flex-shrink-0" />
               <p className="text-sm text-amber-700">
-                <span className="font-bold">Free preview:</span> Showing {FREE_WORD_LIMIT} of {words.length} words.
-                {isGuest ? ' Sign up and upgrade to Premium to unlock all words.' : ' Upgrade to Premium to unlock all words.'}
+                <span className="font-bold">{tr('freePreview')}:</span> {tr('showingOf')} {FREE_WORD_LIMIT} {tr('of')} {words.length} {tr('words')}.
+                {isGuest ? ` ${tr('signUp')} & ${tr('upgradeToPremium')}` : ` ${tr('upgradeToPremium')}`}
               </p>
             </div>
             <button onClick={() => isGuest ? navigate('/register') : navigate('/payment')}
               className="px-4 py-2 rounded-lg bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition-colors cursor-pointer flex-shrink-0 self-start">
-              {isGuest ? 'Sign Up' : 'Upgrade'}
+              {isGuest ? tr('signUp') : tr('upgradeNow')}
             </button>
           </div>
         )}
@@ -176,7 +176,7 @@ export default function HskLevelPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredWords.length === 0 ? (
             <div className="col-span-full bg-white rounded-2xl p-8 shadow-sm text-center">
-              <p className="text-gray-400 text-sm">No words found</p>
+              <p className="text-gray-400 text-sm">{tr('noWordsFound')}</p>
             </div>
           ) : (
             (isLimited ? filteredWords.slice(0, FREE_WORD_LIMIT) : filteredWords).map((word, index) => {
@@ -216,7 +216,7 @@ export default function HskLevelPage() {
 
                     <button onClick={() => setExpandedWord(isExpanded ? null : word.id)}
                       className="w-full py-2 rounded-lg bg-gray-50 text-xs text-gray-600 font-medium hover:bg-gray-100 transition-colors cursor-pointer">
-                      {isExpanded ? 'Show Less' : 'Show More'}
+                      {isExpanded ? tr('showLess') : tr('showMore')}
                     </button>
                   </div>
 

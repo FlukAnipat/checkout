@@ -1,10 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Play, Crown, BookOpen, Star, Users, Download, ChevronRight, Sparkles, Zap, Award } from 'lucide-react'
+import { ArrowRight, Play, Crown, BookOpen, Star, Users, Download, ChevronRight, Sparkles, Zap, Award, LogOut, User } from 'lucide-react'
+import { useLanguage } from '../contexts/LanguageContext'
 
 export default function GuestPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
+  const { tr } = useLanguage()
+
+  const token = localStorage.getItem('sf_token')
+  const isLoggedIn = !!token
+  const user = isLoggedIn ? JSON.parse(localStorage.getItem('sf_user') || '{}') : null
+  const firstName = user?.first_name || user?.firstName || ''
 
   const handleGetStarted = () => {
     navigate('/dashboard')
@@ -16,6 +23,12 @@ export default function GuestPage() {
 
   const handleRegister = () => {
     navigate('/register')
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('sf_token')
+    localStorage.removeItem('sf_user')
+    window.location.reload()
   }
 
   const handleDownloadApp = () => {
@@ -46,12 +59,27 @@ export default function GuestPage() {
             <button onClick={handleDownloadApp}
               className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors cursor-pointer flex items-center gap-2">
               <Download size={16} />
-              Download App
+              {tr('downloadApp')}
             </button>
-            <button onClick={handleLogin}
-              className="px-4 py-2 rounded-xl gradient-primary text-white text-sm font-bold hover:shadow-lg transition-all cursor-pointer">
-              Login
-            </button>
+            {isLoggedIn ? (
+              <>
+                <button onClick={() => navigate('/dashboard')}
+                  className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm font-bold text-gray-900 hover:bg-gray-50 transition-colors cursor-pointer flex items-center gap-2">
+                  <User size={16} />
+                  {firstName || tr('home')}
+                </button>
+                <button onClick={handleLogout}
+                  className="px-4 py-2 rounded-xl bg-red-50 border border-red-200 text-red-500 text-sm font-bold hover:bg-red-100 transition-colors cursor-pointer flex items-center gap-2">
+                  <LogOut size={16} />
+                  {tr('logout')}
+                </button>
+              </>
+            ) : (
+              <button onClick={handleLogin}
+                className="px-4 py-2 rounded-xl gradient-primary text-white text-sm font-bold hover:shadow-lg transition-all cursor-pointer">
+                {tr('login')}
+              </button>
+            )}
           </div>
         </nav>
 

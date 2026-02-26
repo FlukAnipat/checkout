@@ -40,6 +40,12 @@ export const authAPI = {
 
   getMe: () =>
     api.get('/auth/me'),
+
+  updateProfile: (data) =>
+    api.put('/auth/me', data),
+
+  changePassword: (oldPassword, newPassword) =>
+    api.put('/auth/me', { password: oldPassword, newPassword }),
 };
 
 // ── Payment API ──

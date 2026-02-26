@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { vocabAPI } from '../../services/api'
-import { ArrowLeft, ChevronLeft, ChevronRight, Flame, Target, BookOpen, Trophy, Calendar as CalendarIcon } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Flame, Target, BookOpen, Trophy, Calendar as CalendarIcon, Check, X as XIcon } from 'lucide-react'
 import WebLayout from '../../components/WebLayout'
+import { useLanguage } from '../../contexts/LanguageContext'
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const MONTH_KEYS = ['january','february','march','april','may','june','july','august','september','october','november','december']
+const DAY_KEYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
 
 export default function ProgressPage() {
   const navigate = useNavigate()
+  const { tr } = useLanguage()
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [dailyGoals, setDailyGoals] = useState([])
   const [sessions, setSessions] = useState([])
   const [stats, setStats] = useState({ dayStreak: 0, totalLearned: 0 })
   const [loading, setLoading] = useState(true)
+  const [selectedDay, setSelectedDay] = useState(null)
 
   const user = JSON.parse(localStorage.getItem('sf_user') || '{}')
   const userId = user.user_id || user.userId
@@ -117,10 +120,30 @@ export default function ProgressPage() {
     return d > today
   }
 
+  // Build goal map for quick lookup: dateStr -> goal
+  const goalMap = {}
+  dailyGoals.forEach(g => {
+    const gd = new Date(g.goal_date)
+    const gs = `${gd.getFullYear()}-${String(gd.getMonth() + 1).padStart(2, '0')}-${String(gd.getDate()).padStart(2, '0')}`
+    goalMap[gs] = g
+  })
+
+  const sessionMap = {}
+  sessions.forEach(s => {
+    const sd = new Date(s.session_date)
+    const ss = `${sd.getFullYear()}-${String(sd.getMonth() + 1).padStart(2, '0')}-${String(sd.getDate()).padStart(2, '0')}`
+    sessionMap[ss] = s
+  })
+
+  const getDateStr = (day) => `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+
   // Count completed days this month
   const completedDays = dailyGoals.filter(g => g.is_completed === 1 || g.is_completed === true).length
-  const activeDays = sessions.length
-  const totalCardsMonth = sessions.reduce((s, ses) => s + (ses.learned_cards || 0), 0)
+  const totalCardsMonth = dailyGoals.reduce((s, g) => s + (g.completed_cards || 0), 0)
+
+  // Selected day info
+  const selectedGoal = selectedDay ? goalMap[getDateStr(selectedDay)] : null
+  const selectedSession = selectedDay ? sessionMap[getDateStr(selectedDay)] : null
 
   return (
     <WebLayout>
@@ -131,58 +154,45 @@ export default function ProgressPage() {
             className="w-10 h-10 rounded-xl bg-white shadow-sm border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer">
             <ArrowLeft size={18} className="text-gray-600" />
           </button>
-          <div>
-            <h1 className="text-2xl font-black text-gray-900">My Progress</h1>
-            <p className="text-sm text-gray-500">Track your daily learning journey</p>
+          <div className="flex-1">
+            <h1 className="text-2xl font-black text-gray-900">{tr('learningCalendar')}</h1>
+            <p className="text-sm text-gray-500">{tr('trackDailyProgress')}</p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-green-500 flex items-center justify-center">
+            <CalendarIcon size={22} className="text-white" />
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center mb-3">
-              <Flame size={20} className="text-orange-500" />
-            </div>
-            <div className="text-2xl font-black text-gray-900">{stats.dayStreak}</div>
-            <div className="text-xs text-gray-500 font-medium">Day Streak</div>
-          </div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center mb-3">
-              <BookOpen size={20} className="text-blue-500" />
-            </div>
-            <div className="text-2xl font-black text-gray-900">{stats.totalLearned}</div>
-            <div className="text-xs text-gray-500 font-medium">Total Learned</div>
-          </div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center mb-3">
-              <Target size={20} className="text-green-500" />
-            </div>
+        {/* Stats Cards (matches Flutter _buildStatsSummary) */}
+        <div className="grid grid-cols-3 gap-3 mb-8">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-center">
+            <Target size={22} className="text-green-500 mx-auto mb-2" />
             <div className="text-2xl font-black text-gray-900">{completedDays}</div>
-            <div className="text-xs text-gray-500 font-medium">Goals Met ({MONTHS[month].slice(0, 3)})</div>
+            <div className="text-[10px] text-gray-500 font-medium leading-tight">{tr('daysCompleted')}</div>
           </div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center mb-3">
-              <Trophy size={20} className="text-purple-500" />
-            </div>
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-center">
+            <Flame size={22} className="text-orange-500 mx-auto mb-2" />
+            <div className="text-2xl font-black text-gray-900">{stats.dayStreak}</div>
+            <div className="text-[10px] text-gray-500 font-medium leading-tight">{tr('dayStreak')}</div>
+          </div>
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-center">
+            <BookOpen size={22} className="text-blue-500 mx-auto mb-2" />
             <div className="text-2xl font-black text-gray-900">{totalCardsMonth}</div>
-            <div className="text-xs text-gray-500 font-medium">Cards This Month</div>
+            <div className="text-[10px] text-gray-500 font-medium leading-tight">{tr('totalCards')}</div>
           </div>
         </div>
 
         {/* Calendar */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-6">
           {/* Month Navigation */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-5">
             <button onClick={prevMonth}
               className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer">
               <ChevronLeft size={18} className="text-gray-600" />
             </button>
-            <div className="flex items-center gap-2">
-              <CalendarIcon size={18} className="text-primary-500" />
-              <h2 className="text-lg font-bold text-gray-900">
-                {MONTHS[month]} {year}
-              </h2>
-            </div>
+            <h2 className="text-lg font-bold text-gray-900">
+              {tr(MONTH_KEYS[month])} {year}
+            </h2>
             <button onClick={nextMonth}
               className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer">
               <ChevronRight size={18} className="text-gray-600" />
@@ -190,83 +200,134 @@ export default function ProgressPage() {
           </div>
 
           {/* Day Headers */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {DAYS.map(day => (
-              <div key={day} className="text-center text-xs font-bold text-gray-400 py-2">
-                {day}
+          <div className="grid grid-cols-7 gap-1 mb-1">
+            {DAY_KEYS.map(dk => (
+              <div key={dk} className="text-center text-[10px] sm:text-xs font-bold text-gray-400 py-1">
+                {tr(dk)}
               </div>
             ))}
           </div>
 
-          {/* Calendar Grid */}
+          {/* Calendar Grid (matches Flutter calendar cells with X/10) */}
           <div className="grid grid-cols-7 gap-1">
             {calendarDays.map((day, idx) => {
               if (day === null) {
                 return <div key={`empty-${idx}`} className="aspect-square" />
               }
 
-              const goal = getGoalForDate(day)
-              const session = getSessionForDate(day)
+              const dateStr = getDateStr(day)
+              const goal = goalMap[dateStr]
+              const wordsLearned = goal?.completed_cards || 0
               const isComplete = goal && (goal.is_completed === 1 || goal.is_completed === true)
-              const hasActivity = !!session
-              const todayClass = isToday(day)
+              const hasProgress = wordsLearned > 0
+              const todayCell = isToday(day)
               const futureDay = isFuture(day)
+              const isSelected = selectedDay === day
 
-              let bgClass = 'bg-gray-50'
-              let textClass = 'text-gray-700'
-              let indicator = null
+              let bgClass, textClass, progressColor, icon
 
               if (futureDay) {
-                bgClass = 'bg-gray-25'
+                bgClass = 'bg-gray-50'
                 textClass = 'text-gray-300'
+                progressColor = 'text-gray-300'
+                icon = null
               } else if (isComplete) {
-                bgClass = 'bg-green-100'
+                bgClass = 'bg-green-50'
                 textClass = 'text-green-700'
-                indicator = <div className="w-1.5 h-1.5 rounded-full bg-green-500 mx-auto mt-0.5" />
-              } else if (hasActivity) {
-                bgClass = 'bg-blue-50'
-                textClass = 'text-blue-700'
-                indicator = <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mx-auto mt-0.5" />
+                progressColor = 'text-green-500'
+                icon = <Check size={8} className="text-green-500" />
+              } else if (hasProgress) {
+                bgClass = 'bg-amber-50'
+                textClass = 'text-amber-700'
+                progressColor = 'text-amber-500'
+                icon = null
+              } else {
+                bgClass = 'bg-gray-50'
+                textClass = 'text-gray-600'
+                progressColor = 'text-red-400'
+                icon = !futureDay ? <XIcon size={8} className="text-red-400" /> : null
               }
 
               return (
-                <div key={day}
-                  className={`aspect-square rounded-xl flex flex-col items-center justify-center transition-all
-                    ${bgClass} ${todayClass ? 'ring-2 ring-primary-500 ring-offset-1' : ''}
+                <button key={day}
+                  onClick={() => setSelectedDay(isSelected ? null : day)}
+                  className={`aspect-square rounded-lg flex flex-col items-center justify-center transition-all relative cursor-pointer
+                    ${bgClass}
+                    ${todayCell ? 'ring-2 ring-green-500 ring-offset-1' : ''}
+                    ${isSelected ? 'ring-2 ring-blue-400 ring-offset-1' : ''}
                   `}>
-                  <span className={`text-sm font-semibold ${textClass}`}>{day}</span>
-                  {indicator}
-                  {session && !futureDay && (
-                    <span className="text-[8px] text-gray-400 font-medium mt-0.5">
-                      {session.learned_cards}
+                  <span className={`text-xs font-bold ${textClass}`}>{day}</span>
+                  {!futureDay && (
+                    <span className={`text-[7px] sm:text-[8px] font-semibold ${progressColor}`}>
+                      {wordsLearned}/10
                     </span>
                   )}
-                </div>
+                  {icon && (
+                    <span className="absolute top-0.5 right-0.5">{icon}</span>
+                  )}
+                </button>
               )
             })}
           </div>
 
           {/* Legend */}
-          <div className="flex items-center justify-center gap-6 mt-6 pt-4 border-t border-gray-100">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-green-500" />
-              <span className="text-xs text-gray-500">Goal Complete</span>
+          <div className="flex items-center justify-center gap-4 sm:gap-6 mt-5 pt-4 border-t border-gray-100">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-green-50 border border-green-300" />
+              <span className="text-[10px] sm:text-xs text-gray-500">{tr('completedStatus')}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-blue-400" />
-              <span className="text-xs text-gray-500">Active Day</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-amber-50 border border-amber-300" />
+              <span className="text-[10px] sm:text-xs text-gray-500">{tr('incompleteStatus')}</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded bg-gray-50 border border-gray-200" />
-              <span className="text-xs text-gray-500">No Activity</span>
+              <span className="text-[10px] sm:text-xs text-gray-500">{tr('noActivity')}</span>
             </div>
           </div>
         </div>
 
+        {/* Selected Day Info (matches Flutter _buildSelectedDayInfo) */}
+        {selectedDay && !isFuture(selectedDay) && (() => {
+          const dateStr = getDateStr(selectedDay)
+          const g = goalMap[dateStr]
+          const wl = g?.completed_cards || 0
+          const ic = g && (g.is_completed === 1 || g.is_completed === true)
+          const statusColor = ic ? 'text-green-600' : wl > 0 ? 'text-amber-600' : 'text-red-500'
+          const statusBg = ic ? 'bg-green-50 border-green-200' : wl > 0 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'
+          const statusText = ic ? tr('goalCompleted') : wl > 0 ? tr('goalNotMet') : tr('noActivity')
+          const statusIcon = ic ? <Check size={16} className="text-green-500" /> : wl > 0 ? <Target size={16} className="text-amber-500" /> : <XIcon size={16} className="text-red-400" />
+
+          const d = new Date(year, month, selectedDay)
+          const dayName = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+
+          return (
+            <div className={`rounded-2xl border p-5 mb-6 ${statusBg}`}>
+              <div className="flex items-center gap-3 mb-3">
+                {statusIcon}
+                <div>
+                  <p className={`text-sm font-bold ${statusColor}`}>{statusText}</p>
+                  <p className="text-xs text-gray-500">{dayName}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white/80 rounded-xl p-3 text-center">
+                  <p className="text-lg font-black text-gray-900">{wl}</p>
+                  <p className="text-[10px] text-gray-500 font-medium">{tr('cardsLabel')}</p>
+                </div>
+                <div className="bg-white/80 rounded-xl p-3 text-center">
+                  <p className="text-lg font-black text-gray-900">{wl > 0 ? Math.round(wl * 2) : 0}</p>
+                  <p className="text-[10px] text-gray-500 font-medium">{tr('minutesLabel')}</p>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Recent Sessions */}
         {sessions.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Activity</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">{tr('recentActivity')}</h3>
             <div className="space-y-3">
               {sessions.slice(0, 10).map((s, i) => {
                 const d = new Date(s.session_date)
@@ -278,7 +339,7 @@ export default function ProgressPage() {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          Studied {s.learned_cards} cards
+                          {tr('studied')} {s.learned_cards} {tr('cards')}
                           {s.hsk_level ? ` · HSK ${s.hsk_level}` : ''}
                         </p>
                         <p className="text-xs text-gray-400">
@@ -295,16 +356,16 @@ export default function ProgressPage() {
         )}
 
         {/* Empty state */}
-        {!loading && sessions.length === 0 && (
+        {!loading && sessions.length === 0 && dailyGoals.length === 0 && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
             <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-4">
               <CalendarIcon size={28} className="text-gray-300" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-1">No Activity Yet</h3>
-            <p className="text-sm text-gray-400 mb-6">Start studying flashcards to track your daily progress here.</p>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">{tr('noActivityYet')}</h3>
+            <p className="text-sm text-gray-400 mb-6">{tr('startStudyingFlashcards')}</p>
             <button onClick={() => navigate('/dashboard')}
               className="px-6 py-2.5 rounded-xl gradient-primary text-white text-sm font-bold cursor-pointer">
-              Start Learning
+              {tr('startLearning')}
             </button>
           </div>
         )}

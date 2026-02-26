@@ -26,7 +26,7 @@ export default function FlashcardPage() {
   const [loading, setLoading] = useState(true)
   const [savedWords, setSavedWords] = useState(new Set())
   const [learned, setLearned] = useState(new Set())
-  const { language, getMeaning, getExample, currentLang } = useLanguage()
+  const { language, getMeaning, getExample, currentLang, tr } = useLanguage()
 
   const FREE_WORD_LIMIT = 20
 
@@ -91,6 +91,29 @@ export default function FlashcardPage() {
       const newLearned = new Set(learned)
       newLearned.add(currentWord.id)
       setLearned(newLearned)
+
+      // Sync daily goal progress (like Flutter GoalProvider.incrementProgress)
+      if (!isGuest) {
+        const userId = user.user_id || user.userId
+        if (userId) {
+          const today = new Date()
+          const goalDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+          const completedCards = newLearned.size
+          vocabAPI.syncDailyGoal(userId, {
+            goalDate,
+            targetCards: 10,
+            completedCards,
+            isCompleted: completedCards >= 10,
+          }).catch(() => {})
+
+          vocabAPI.syncLearningSession(userId, {
+            sessionDate: goalDate,
+            hskLevel: levelNum,
+            learnedCards: 1,
+            minutesSpent: 0,
+          }).catch(() => {})
+        }
+      }
     }
     goNext()
   }
@@ -122,9 +145,9 @@ export default function FlashcardPage() {
       <WebLayout>
         <div className="flex items-center justify-center min-h-[60vh] px-5">
           <div className="text-center">
-            <p className="text-gray-500 text-sm mb-4">No words available for this level</p>
+            <p className="text-gray-500 text-sm mb-4">{tr('noWordsAvailable')}</p>
             <button onClick={() => navigate('/dashboard')} className="px-6 py-3 rounded-xl gradient-primary text-white font-bold text-sm cursor-pointer">
-              Back to Dashboard
+              {tr('backToDashboard')}
             </button>
           </div>
         </div>
@@ -143,14 +166,14 @@ export default function FlashcardPage() {
               <ArrowLeft size={18} className="text-gray-600" />
             </button>
             <div>
-              <h1 className="text-lg font-black text-gray-900">HSK {levelNum} Flashcards</h1>
-              <p className="text-sm text-gray-400">{currentIndex + 1} of {words.length}</p>
+              <h1 className="text-lg font-black text-gray-900">HSK {levelNum} {tr('flashcards')}</h1>
+              <p className="text-sm text-gray-400">{currentIndex + 1} {tr('of')} {words.length}</p>
             </div>
           </div>
           <button onClick={shuffleWords}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-200 text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors cursor-pointer">
             <Shuffle size={16} />
-            Shuffle
+            {tr('shuffle')}
           </button>
         </div>
 
@@ -178,13 +201,13 @@ export default function FlashcardPage() {
                   title="Listen to pronunciation">
                   <Volume2 size={18} className="text-blue-500" />
                 </button>
-                <p className="text-xs text-gray-300">Click to reveal meaning</p>
+                <p className="text-xs text-gray-300">{tr('clickToReveal')}</p>
               </div>
             ) : (
               <div className="text-center animate-fade-in w-full overflow-y-auto max-h-full">
                 {/* DEFINITION header */}
                 <div className="inline-block px-3 py-1 rounded-xl bg-indigo-50 border border-indigo-100 mb-4">
-                  <span className="text-[9px] font-extrabold tracking-widest text-indigo-400 uppercase">Definition</span>
+                  <span className="text-[9px] font-extrabold tracking-widest text-indigo-400 uppercase">{tr('definition')}</span>
                 </div>
 
                 {/* Pinyin */}
@@ -247,7 +270,7 @@ export default function FlashcardPage() {
                   )
                 })()}
                 
-                <p className="text-xs text-gray-300 mt-4">Click to flip back</p>
+                <p className="text-xs text-gray-300 mt-4">{tr('clickToFlipBack')}</p>
               </div>
             )}
           </button>
@@ -280,7 +303,7 @@ export default function FlashcardPage() {
             <button onClick={goPrev} disabled={currentIndex === 0}
               className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-white border border-gray-200 text-sm text-gray-600 font-medium disabled:opacity-30 hover:bg-gray-50 transition-colors cursor-pointer disabled:cursor-not-allowed">
               <ChevronLeft size={16} />
-              Previous
+              {tr('previous')}
             </button>
             <button onClick={() => setIsFlipped(!isFlipped)}
               className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer">
@@ -288,16 +311,16 @@ export default function FlashcardPage() {
             </button>
             <button onClick={goNext} disabled={currentIndex >= words.length - 1}
               className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-white border border-gray-200 text-sm text-gray-600 font-medium disabled:opacity-30 hover:bg-gray-50 transition-colors cursor-pointer disabled:cursor-not-allowed">
-              Next
+              {tr('next')}
               <ChevronRight size={16} />
             </button>
           </div>
 
           {/* Stats */}
           <div className="flex items-center justify-center gap-4 text-sm text-gray-400">
-            <span>{learned.size} learned</span>
+            <span>{learned.size} {tr('learned')}</span>
             <span>·</span>
-            <span>{savedWords.size} saved</span>
+            <span>{savedWords.size} {tr('saved')}</span>
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { vocabAPI } from '../../services/api'
 import { Search, Crown, Lock, BookOpen, Play, Download, X, Sparkles, Volume2 } from 'lucide-react'
 import WebLayout from '../../components/WebLayout'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const HSK_COLORS = {
   1: { bg: 'bg-red-500', light: 'bg-red-50', text: 'text-red-600', border: 'border-red-200', gradient: 'from-red-500 to-red-600' },
@@ -18,6 +19,7 @@ const HSK_WORD_COUNTS = { 1: 150, 2: 150, 3: 300, 4: 600, 5: 1300, 6: 2500 }
 
 export default function UserDashboard() {
   const navigate = useNavigate()
+  const { tr, getMeaning } = useLanguage()
   const [user, setUser] = useState(null)
   const [levels, setLevels] = useState([])
   const [loading, setLoading] = useState(true)
@@ -115,17 +117,17 @@ export default function UserDashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-black text-gray-900">
-                {isGuest ? 'Explore HSK Levels' : `Welcome back, ${firstName}`}
+                {isGuest ? tr('exploreHskLevels') : `${tr('welcomeBack')}, ${firstName}`}
               </h1>
               <p className="text-gray-500 mt-1">
-                {isGuest ? 'Try HSK 1 for free — sign up to unlock all levels' : 'Continue your Chinese learning journey'}
+                {isGuest ? tr('tryFree') : tr('continueJourney')}
               </p>
             </div>
             {!isGuest && !isPaid && (
               <button onClick={() => navigate('/payment')}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-white text-sm font-bold shadow-sm hover:shadow-md transition-all cursor-pointer self-start">
                 <Crown size={16} />
-                Upgrade to Premium
+                {tr('upgradeToPremium')}
               </button>
             )}
           </div>
@@ -137,21 +139,21 @@ export default function UserDashboard() {
             <div className="text-2xl font-black text-primary-500">
               {levels.reduce((sum, l) => sum + (l.word_count || 0), 0).toLocaleString()}
             </div>
-            <div className="text-sm text-gray-500 font-medium mt-1">Total Words</div>
+            <div className="text-sm text-gray-500 font-medium mt-1">{tr('totalWords')}</div>
           </div>
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <div className="text-2xl font-black text-green-500">6</div>
-            <div className="text-sm text-gray-500 font-medium mt-1">HSK Levels</div>
+            <div className="text-sm text-gray-500 font-medium mt-1">{tr('hskLevels')}</div>
           </div>
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <div className="text-2xl font-black text-blue-500">
               {isGuest ? 1 : (isPaid ? 6 : 1)}
             </div>
-            <div className="text-sm text-gray-500 font-medium mt-1">Levels Unlocked</div>
+            <div className="text-sm text-gray-500 font-medium mt-1">{tr('levelsUnlocked')}</div>
           </div>
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <div className="text-2xl font-black text-purple-500">3</div>
-            <div className="text-sm text-gray-500 font-medium mt-1">Languages</div>
+            <div className="text-sm text-gray-500 font-medium mt-1">{tr('languages')}</div>
           </div>
         </div>
 
@@ -163,7 +165,7 @@ export default function UserDashboard() {
               type="text"
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Search vocabulary (hanzi, pinyin, or meaning)..."
+              placeholder={tr('searchVocabulary')}
               className="w-full pl-11 pr-10 py-3 rounded-xl bg-white border border-gray-200 text-sm focus:border-primary-300 focus:ring-2 focus:ring-primary-500/10 outline-none transition-all"
             />
             {searchQuery && (
@@ -211,9 +213,7 @@ export default function UserDashboard() {
                               </button>
                             </div>
                             <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
-                              {word.meaningEn && <span className="text-xs text-gray-600">{word.meaningEn}</span>}
-                              {word.meaningMy && <span className="text-xs text-gray-500">· {word.meaningMy}</span>}
-                              {word.meaning && word.meaning !== word.meaningEn && <span className="text-xs text-gray-500">· {word.meaning}</span>}
+                              <span className="text-xs text-gray-600 whitespace-pre-line">{getMeaning(word)}</span>
                             </div>
                             {word.example && (
                               <p className="text-xs text-gray-400 mt-1 truncate">Example: {word.example}</p>
@@ -231,11 +231,11 @@ export default function UserDashboard() {
 
         {/* Section Title */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-900">HSK Levels</h2>
+          <h2 className="text-lg font-bold text-gray-900">{tr('hskLevels')}</h2>
           {(isGuest || !isPaid) && (
             <span className="text-xs text-gray-400 font-medium flex items-center gap-1">
               <Lock size={12} />
-              {isGuest ? 'Sign up for full access' : 'Premium required for HSK 2-6'}
+              {isGuest ? tr('signUpForFullAccess') : tr('premiumRequired')}
             </span>
           )}
         </div>
@@ -277,17 +277,17 @@ export default function UserDashboard() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <span className="text-lg font-bold text-gray-900">{wordCount}</span>
-                      <span className="text-sm text-gray-500 ml-1">words</span>
+                      <span className="text-sm text-gray-500 ml-1">{tr('words')}</span>
                     </div>
                     {isLocked ? (
                       <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100">
                         <Lock size={14} className="text-gray-400" />
-                        <span className="text-xs font-medium text-gray-400">Locked</span>
+                        <span className="text-xs font-medium text-gray-400">{tr('locked')}</span>
                       </div>
                     ) : (
                       <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg ${colors.light}`}>
                         <BookOpen size={14} className={colors.text} />
-                        <span className={`text-xs font-medium ${colors.text}`}>Available</span>
+                        <span className={`text-xs font-medium ${colors.text}`}>{tr('available')}</span>
                       </div>
                     )}
                   </div>
@@ -301,13 +301,13 @@ export default function UserDashboard() {
                         }
                       `}>
                       <BookOpen size={16} />
-                      {isLocked ? (isGuest ? 'Sign Up' : 'Unlock') : 'Study'}
+                      {isLocked ? (isGuest ? tr('signUp') : tr('unlockAll')) : tr('study')}
                     </button>
                     {!isLocked && (
                       <button onClick={() => navigate(`/flashcard/${level}`)}
                         className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border ${colors.border} ${colors.text} hover:${colors.light} transition-all cursor-pointer`}>
                         <Play size={16} />
-                        Cards
+                        {tr('flashcards')}
                       </button>
                     )}
                   </div>
@@ -325,14 +325,14 @@ export default function UserDashboard() {
                 <Crown size={28} className="text-white" />
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-bold">Unlock All HSK Levels</h3>
+                <h3 className="text-xl font-bold">{tr('unlockAllHskLevels')}</h3>
                 <p className="text-white/85 mt-1">
                   Get full access to 5,000+ vocabulary words across all 6 HSK levels with premium features.
                 </p>
               </div>
               <button onClick={() => isGuest ? navigate('/register') : navigate('/payment')}
                 className="px-6 py-3 rounded-xl bg-white text-amber-600 font-bold text-sm hover:bg-white/90 transition-colors cursor-pointer flex-shrink-0 self-start">
-                {isGuest ? 'Register Free' : 'Upgrade Now'}
+                {isGuest ? tr('registerFree') : tr('upgradeNow')}
               </button>
             </div>
           </div>
@@ -345,11 +345,11 @@ export default function UserDashboard() {
               <Download size={22} className="text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="font-bold">Download the Mobile App</h3>
+              <h3 className="font-bold">{tr('downloadMobileApp')}</h3>
               <p className="text-gray-400 text-sm mt-0.5">Get offline access, audio pronunciation, and the full mobile experience</p>
             </div>
             <a href="#" className="px-5 py-2.5 rounded-xl bg-white text-gray-900 text-sm font-bold hover:bg-gray-100 transition-colors self-start">
-              Download APK
+              {tr('downloadApk')}
             </a>
           </div>
         </div>
