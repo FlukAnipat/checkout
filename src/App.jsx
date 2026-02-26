@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
+import { LanguageProvider } from './contexts/LanguageContext'
 
 // Guest page
 const GuestPage = lazy(() => import('./pages/GuestPage'))
@@ -62,6 +63,7 @@ function UserRoute({ children }) {
 
 export default function App() {
   return (
+    <LanguageProvider>
     <HashRouter>
       <Suspense fallback={<Loading />}>
         <Routes>
@@ -98,5 +100,6 @@ export default function App() {
         </Routes>
       </Suspense>
     </HashRouter>
+    </LanguageProvider>
   )
 }

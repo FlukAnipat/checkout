@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { vocabAPI } from '../../services/api'
 import { ArrowLeft, RotateCcw, ChevronLeft, ChevronRight, Shuffle, BookmarkCheck, Bookmark, Check, X as XIcon, Volume2, Lock } from 'lucide-react'
 import WebLayout from '../../components/WebLayout'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const HSK_COLORS = {
   1: { gradient: 'from-red-500 to-red-600' },
@@ -25,6 +26,7 @@ export default function FlashcardPage() {
   const [loading, setLoading] = useState(true)
   const [savedWords, setSavedWords] = useState(new Set())
   const [learned, setLearned] = useState(new Set())
+  const { language, getMeaning, getExample, currentLang } = useLanguage()
 
   const FREE_WORD_LIMIT = 20
 
@@ -179,44 +181,73 @@ export default function FlashcardPage() {
                 <p className="text-xs text-gray-300">Click to reveal meaning</p>
               </div>
             ) : (
-              <div className="text-center animate-fade-in w-full">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <p className="text-4xl font-bold text-gray-900">{currentWord.hanzi}</p>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); speakChinese(currentWord.hanzi) }}
-                    className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer flex-shrink-0"
-                    title="Listen">
-                    <Volume2 size={14} className="text-blue-500" />
-                  </button>
+              <div className="text-center animate-fade-in w-full overflow-y-auto max-h-full">
+                {/* DEFINITION header */}
+                <div className="inline-block px-3 py-1 rounded-xl bg-indigo-50 border border-indigo-100 mb-4">
+                  <span className="text-[9px] font-extrabold tracking-widest text-indigo-400 uppercase">Definition</span>
                 </div>
-                <p className="text-sm text-gray-400 mb-6">{currentWord.pinyin}</p>
-                
-                {/* Example sentences with audio */}
-                {currentWord.example && (
-                  <div className="mt-4 p-3 rounded-xl bg-gray-50 border border-gray-100">
-                    <p className="text-xs font-medium text-gray-400 mb-2">Example Sentences</p>
-                    <div className="space-y-2">
-                      {currentWord.example.split('\n').filter(line => line.trim()).map((line, index) => {
-                        // Check if line contains Chinese characters
-                        const hasChinese = /[\u4e00-\u9fff]/.test(line)
-                        // Only show Chinese lines
-                        return hasChinese ? (
-                          <div key={index} className="flex items-start gap-2">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); speakChinese(line.trim()) }}
-                              className="w-6 h-6 rounded-md bg-blue-50 flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer flex-shrink-0 mt-0.5"
-                              title="Listen to example">
-                              <Volume2 size={10} className="text-blue-500" />
-                            </button>
-                            <span className="text-sm text-gray-700">{line.trim()}</span>
-                          </div>
-                        ) : null
-                      })}
+
+                {/* Pinyin */}
+                <div className="inline-block px-5 py-2.5 rounded-2xl bg-indigo-50/50 border border-indigo-100 mb-3">
+                  <p className="text-2xl font-bold text-indigo-600 tracking-wide">{currentWord.pinyin}</p>
+                </div>
+
+                {/* Divider */}
+                <div className="h-px mx-8 bg-gradient-to-r from-transparent via-amber-300 to-transparent mb-4" />
+
+                {/* Meaning based on language */}
+                <div className="p-4 rounded-2xl bg-white shadow-sm border border-gray-100 mb-4">
+                  <p className={`font-bold text-gray-900 whitespace-pre-line ${language === 'englishAndBurmese' ? 'text-base' : 'text-xl'}`}>
+                    {getMeaning(currentWord)}
+                  </p>
+                </div>
+
+                {/* Language badge + Examples */}
+                {(() => {
+                  const exampleText = getExample(currentWord.example)
+                  if (!exampleText) return null
+
+                  const langColors = {
+                    english: { primary: 'text-blue-800', bg: 'bg-blue-50', border: 'border-blue-100' },
+                    burmese: { primary: 'text-green-700', bg: 'bg-green-50', border: 'border-green-100' },
+                    englishAndBurmese: { primary: 'text-purple-700', bg: 'bg-purple-50', border: 'border-purple-100' },
+                  }
+                  const lc = langColors[language] || langColors.english
+
+                  return (
+                    <div className="p-3 text-left">
+                      {/* Language header */}
+                      <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl ${lc.bg} mb-3`}>
+                        <span className="text-xs">{currentLang.flag}</span>
+                        <span className={`text-[10px] font-bold ${lc.primary} tracking-wide`}>{currentLang.nativeName}</span>
+                      </div>
+
+                      {/* Example lines */}
+                      <div className="space-y-1">
+                        {exampleText.split('\n').filter(l => l.trim()).map((line, idx) => {
+                          const hasChinese = /[\u4e00-\u9fff]/.test(line)
+                          return hasChinese ? (
+                            <div key={idx} className="flex items-start gap-2 py-1">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); speakChinese(line.replace(/^\d+\.\s*/, '').trim()) }}
+                                className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center hover:bg-orange-600 transition-colors cursor-pointer flex-shrink-0 mt-0.5"
+                                title="Listen">
+                                <Volume2 size={11} className="text-white" />
+                              </button>
+                              <span className="text-sm text-gray-800 font-medium">{line.trim()}</span>
+                            </div>
+                          ) : (
+                            <div key={idx} className="pl-8 py-0.5">
+                              <span className="text-xs text-gray-500 font-medium">{line.trim()}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )
+                })()}
                 
-                <p className="text-xs text-gray-300 mt-6">Click to flip back</p>
+                <p className="text-xs text-gray-300 mt-4">Click to flip back</p>
               </div>
             )}
           </button>

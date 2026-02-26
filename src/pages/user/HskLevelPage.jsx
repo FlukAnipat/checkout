@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { vocabAPI } from '../../services/api'
 import { ArrowLeft, Play, Bookmark, BookmarkCheck, Search, X, LogIn, Volume2, Lock } from 'lucide-react'
 import WebLayout from '../../components/WebLayout'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const HSK_COLORS = {
   1: { gradient: 'from-red-500 to-red-600', light: 'bg-red-50', text: 'text-red-600' },
@@ -24,6 +25,7 @@ export default function HskLevelPage() {
   const [expandedWord, setExpandedWord] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [savedWords, setSavedWords] = useState(new Set())
+  const { getMeaning, getExample, currentLang, language } = useLanguage()
 
   const FREE_WORD_LIMIT = 20
 
@@ -207,8 +209,8 @@ export default function HskLevelPage() {
                     <div className="text-center mb-3">
                       <div className="text-2xl font-bold text-gray-900 mb-1">{word.hanzi}</div>
                       <div className="text-sm text-gray-400 mb-2">{word.pinyin}</div>
-                      <div className="text-xs text-gray-500 line-clamp-2">
-                        {word.meaningEn || word.meaning}
+                      <div className="text-xs text-gray-500 line-clamp-2 whitespace-pre-line">
+                        {getMeaning(word)}
                       </div>
                     </div>
 
@@ -220,32 +222,43 @@ export default function HskLevelPage() {
 
                   {isExpanded && (
                     <div className="px-4 pb-4 border-t border-gray-50 pt-3 animate-fade-in">
-                      <div className="space-y-2 mb-3">
-                        {word.meaningEn && (
-                          <div className="flex items-start gap-2">
-                            <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded mt-0.5">EN</span>
-                            <span className="text-xs text-gray-700">{word.meaningEn}</span>
-                          </div>
-                        )}
-                        {word.meaningMy && (
-                          <div className="flex items-start gap-2">
-                            <span className="text-[10px] font-bold text-green-500 bg-green-50 px-1.5 py-0.5 rounded mt-0.5">MY</span>
-                            <span className="text-xs text-gray-700">{word.meaningMy}</span>
-                          </div>
-                        )}
-                        {word.meaning && word.meaning !== word.meaningEn && (
-                          <div className="flex items-start gap-2">
-                            <span className="text-[10px] font-bold text-purple-500 bg-purple-50 px-1.5 py-0.5 rounded mt-0.5">TH</span>
-                            <span className="text-xs text-gray-700">{word.meaning}</span>
-                          </div>
-                        )}
-                      </div>
-                      {word.example && (
-                        <div className="p-2 rounded-lg bg-gray-50 border border-gray-100">
-                          <p className="text-[10px] font-medium text-gray-400 mb-1">Example</p>
-                          <p className="text-xs text-gray-700 whitespace-pre-line leading-relaxed">{word.example}</p>
+                      {/* Meaning based on language */}
+                      <div className="mb-3">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <span className="text-xs">{currentLang.flag}</span>
+                          <span className="text-[10px] font-bold text-gray-500">{currentLang.code}</span>
                         </div>
-                      )}
+                        <p className="text-sm text-gray-800 font-medium whitespace-pre-line">{getMeaning(word)}</p>
+                      </div>
+                      {/* Examples based on language */}
+                      {word.example && (() => {
+                        const exText = getExample(word.example)
+                        if (!exText) return null
+                        return (
+                          <div className="p-2 rounded-lg bg-gray-50 border border-gray-100">
+                            <p className="text-[10px] font-medium text-gray-400 mb-1">Example</p>
+                            <div className="space-y-1">
+                              {exText.split('\n').filter(l => l.trim()).map((line, i) => {
+                                const hasChinese = /[\u4e00-\u9fff]/.test(line)
+                                return hasChinese ? (
+                                  <div key={i} className="flex items-start gap-1.5">
+                                    <button onClick={() => speakChinese(line.replace(/^\d+\.\s*/, '').trim())}
+                                      className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center hover:bg-orange-600 transition-colors cursor-pointer flex-shrink-0 mt-0.5"
+                                      title="Listen">
+                                      <Volume2 size={9} className="text-white" />
+                                    </button>
+                                    <span className="text-xs text-gray-800 font-medium">{line.trim()}</span>
+                                  </div>
+                                ) : (
+                                  <div key={i} className="pl-6">
+                                    <span className="text-[11px] text-gray-500">{line.trim()}</span>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })()}
                     </div>
                   )}
                 </div>
