@@ -19,6 +19,12 @@
   --color-aya-500: #00A651;
   --color-cb-500: #003DA5;
   --color-mpu-500: #006633;
+  --color-hsk1: #E74C3C;
+  --color-hsk2: #E67E22;
+  --color-hsk3: #F1C40F;
+  --color-hsk4: #2ECC71;
+  --color-hsk5: #3498DB;
+  --color-hsk6: #9B59B6;
 }
 
 body {
@@ -26,8 +32,30 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #F7F8FC;
+  background: linear-gradient(135deg, #FDFBF7 0%, #F0F4F8 60%, #FFF8F0 100%);
   min-height: 100vh;
+}
+
+/* App container - mobile-first */
+.app-container {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+  background: linear-gradient(135deg, #FDFBF7 0%, #F0F4F8 60%, #FFF8F0 100%);
+}
+
+@media (min-width: 768px) {
+  .app-container {
+    max-width: 768px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-container {
+    max-width: 480px;
+    box-shadow: 0 0 40px rgba(0,0,0,0.08);
+  }
 }
 
 .glass-card {
