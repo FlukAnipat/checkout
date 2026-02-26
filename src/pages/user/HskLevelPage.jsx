@@ -129,10 +129,10 @@ export default function HskLevelPage() {
         </div>
       </div>
 
-      {/* Word List */}
-      <div className="px-5 -mt-4 space-y-2">
+      {/* Word Cards Grid */}
+      <div className="px-5 -mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredWords.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 shadow-sm text-center">
+          <div className="col-span-full bg-white rounded-2xl p-8 shadow-sm text-center">
             <p className="text-gray-400 text-sm">No words found</p>
           </div>
         ) : (
@@ -143,73 +143,72 @@ export default function HskLevelPage() {
             return (
               <div
                 key={word.id}
-                className="bg-white rounded-2xl shadow-sm border border-gray-50 overflow-hidden transition-all"
+                className="bg-white rounded-2xl shadow-sm border border-gray-50 overflow-hidden transition-all hover:shadow-md"
               >
-                {/* Main row */}
-                <button
-                  onClick={() => setExpandedWord(isExpanded ? null : word.id)}
-                  className="w-full px-4 py-3.5 flex items-center gap-3 text-left cursor-pointer hover:bg-gray-50/50 transition-colors"
-                >
-                  {/* Number */}
-                  <div className={`w-8 h-8 rounded-lg ${colors.light} flex items-center justify-center flex-shrink-0`}>
-                    <span className={`text-xs font-bold ${colors.text}`}>{index + 1}</span>
-                  </div>
-
-                  {/* Hanzi + Pinyin */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-lg font-bold text-gray-900">{word.hanzi}</span>
-                      <span className="text-xs text-gray-400">{word.pinyin}</span>
+                {/* Card Header */}
+                <div className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={`w-8 h-8 rounded-lg ${colors.light} flex items-center justify-center flex-shrink-0`}>
+                      <span className={`text-xs font-bold ${colors.text}`}>{index + 1}</span>
                     </div>
-                    <p className="text-xs text-gray-500 truncate mt-0.5">
-                      {word.meaningEn || word.meaning}
-                    </p>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-1 flex-shrink-0">
                     <button
-                      onClick={(e) => { e.stopPropagation(); toggleSaveWord(word.id) }}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer
+                      onClick={() => toggleSaveWord(word.id)}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer flex-shrink-0
                         ${isSaved ? 'bg-amber-50 text-amber-500' : 'text-gray-300 hover:text-gray-400'}
                       `}
                     >
                       {isSaved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
                     </button>
-                    {isExpanded ? <ChevronUp size={16} className="text-gray-300" /> : <ChevronDown size={16} className="text-gray-300" />}
                   </div>
-                </button>
 
-                {/* Expanded details */}
+                  {/* Main Content */}
+                  <div className="text-center mb-3">
+                    <div className="text-2xl font-bold text-gray-900 mb-1">{word.hanzi}</div>
+                    <div className="text-sm text-gray-400 mb-2">{word.pinyin}</div>
+                    <div className="text-xs text-gray-500 line-clamp-2">
+                      {word.meaningEn || word.meaning}
+                    </div>
+                  </div>
+
+                  {/* Expand Button */}
+                  <button
+                    onClick={() => setExpandedWord(isExpanded ? null : word.id)}
+                    className="w-full py-2 rounded-lg bg-gray-50 text-xs text-gray-600 font-medium hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    {isExpanded ? 'Show Less' : 'Show More'}
+                  </button>
+                </div>
+
+                {/* Expanded Details */}
                 {isExpanded && (
                   <div className="px-4 pb-4 border-t border-gray-50 pt-3 animate-fade-in">
                     {/* Meanings */}
-                    <div className="space-y-2">
+                    <div className="space-y-2 mb-3">
                       {word.meaningEn && (
                         <div className="flex items-start gap-2">
                           <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded mt-0.5">EN</span>
-                          <span className="text-sm text-gray-700">{word.meaningEn}</span>
+                          <span className="text-xs text-gray-700">{word.meaningEn}</span>
                         </div>
                       )}
                       {word.meaningMy && (
                         <div className="flex items-start gap-2">
                           <span className="text-[10px] font-bold text-green-500 bg-green-50 px-1.5 py-0.5 rounded mt-0.5">MY</span>
-                          <span className="text-sm text-gray-700">{word.meaningMy}</span>
+                          <span className="text-xs text-gray-700">{word.meaningMy}</span>
                         </div>
                       )}
                       {word.meaning && word.meaning !== word.meaningEn && (
                         <div className="flex items-start gap-2">
                           <span className="text-[10px] font-bold text-purple-500 bg-purple-50 px-1.5 py-0.5 rounded mt-0.5">TH</span>
-                          <span className="text-sm text-gray-700">{word.meaning}</span>
+                          <span className="text-xs text-gray-700">{word.meaning}</span>
                         </div>
                       )}
                     </div>
 
                     {/* Example */}
                     {word.example && (
-                      <div className="mt-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-                        <p className="text-xs font-medium text-gray-400 mb-1">Example</p>
-                        <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{word.example}</p>
+                      <div className="p-2 rounded-lg bg-gray-50 border border-gray-100">
+                        <p className="text-[10px] font-medium text-gray-400 mb-1">Example</p>
+                        <p className="text-xs text-gray-700 whitespace-pre-line leading-relaxed">{word.example}</p>
                       </div>
                     )}
                   </div>

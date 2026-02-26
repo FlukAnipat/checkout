@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { authAPI } from '../../services/api'
-import { Eye, EyeOff, Briefcase, ArrowLeft, Mail, Lock, User, Phone, Shield } from 'lucide-react'
+import { Eye, EyeOff, Briefcase, ArrowLeft, Mail, Lock, User, Phone, Shield, Tag, Copy, Check } from 'lucide-react'
 
 export default function SaleRegisterPage() {
   const navigate = useNavigate()
   const { token } = useParams()
   const [isAuthorized, setIsAuthorized] = useState(false)
   const [step, setStep] = useState(1)
+  const [personalPromoCode, setPersonalPromoCode] = useState('')
+  const [promoCopied, setPromoCopied] = useState(false)
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -33,6 +35,19 @@ export default function SaleRegisterPage() {
     }
   }, [token])
 
+  const generatePromoCode = (firstName, lastName) => {
+    const firstInitial = firstName.charAt(0).toUpperCase()
+    const lastInitial = lastName.charAt(0).toUpperCase()
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase()
+    return `${firstInitial}${lastInitial}${random}10`
+  }
+
+  const copyPromoCode = () => {
+    navigator.clipboard.writeText(personalPromoCode)
+    setPromoCopied(true)
+    setTimeout(() => setPromoCopied(false), 2000)
+  }
+
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
     if (error) setError('')
@@ -52,6 +67,9 @@ export default function SaleRegisterPage() {
       setError('Phone number is required')
       return
     }
+    // Generate personal promo code
+    const promoCode = generatePromoCode(formData.firstName, formData.lastName)
+    setPersonalPromoCode(promoCode)
     setError('')
     setStep(2)
   }
@@ -78,7 +96,8 @@ export default function SaleRegisterPage() {
         countryCode: formData.countryCode,
         password: formData.password,
         role: 'sales',
-        registrationToken: token
+        registrationToken: token,
+        personalPromoCode: personalPromoCode
       })
 
       const { token: authToken, user } = res.data
@@ -203,6 +222,24 @@ export default function SaleRegisterPage() {
             </form>
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">
+              {/* Personal Promo Code Display */}
+              <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <Tag size={16} className="text-amber-600" />
+                  <span className="text-sm font-bold text-amber-700">Your Personal Promo Code</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 px-4 py-3 rounded-lg bg-white border border-amber-300 font-mono text-lg font-bold text-amber-700 text-center">
+                    {personalPromoCode}
+                  </div>
+                  <button type="button" onClick={copyPromoCode}
+                    className="px-3 py-3 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors cursor-pointer">
+                    {promoCopied ? <Check size={16} /> : <Copy size={16} />}
+                  </button>
+                </div>
+                <p className="text-xs text-amber-600 mt-2">Share this code for 10% discount - You earn 20% commission!</p>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">Password</label>
                 <div className="relative">

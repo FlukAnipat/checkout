@@ -1,6 +1,9 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 
+// Guest page
+const GuestPage = lazy(() => import('./pages/GuestPage'))
+
 // Auth pages
 import LoginPage from './pages/auth/LoginPage'
 const UserRegisterPage = lazy(() => import('./pages/auth/UserRegisterPage'))
@@ -61,6 +64,9 @@ export default function App() {
     <HashRouter>
       <Suspense fallback={<Loading />}>
         <Routes>
+          {/* Guest Landing */}
+          <Route path="/" element={<GuestPage />} />
+
           {/* Auth Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<UserRegisterPage />} />
@@ -85,7 +91,7 @@ export default function App() {
           <Route path="/admin" element={<RoleRoute allowedRoles={['admin']}><AdminDashboard /></RoleRoute>} />
 
           {/* Default */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     </HashRouter>

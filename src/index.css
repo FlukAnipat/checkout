@@ -36,25 +36,46 @@ body {
   min-height: 100vh;
 }
 
-/* App container - mobile-first */
+/* App container - responsive design */
 .app-container {
-  max-width: 480px;
+  max-width: 100%;
   margin: 0 auto;
   min-height: 100vh;
   position: relative;
   background: linear-gradient(135deg, #FDFBF7 0%, #F0F4F8 60%, #FFF8F0 100%);
 }
 
+/* Mobile-first approach */
+@media (min-width: 640px) {
+  .app-container {
+    max-width: 640px;
+    padding: 0 16px;
+  }
+}
+
 @media (min-width: 768px) {
   .app-container {
     max-width: 768px;
+    padding: 0 24px;
   }
 }
 
 @media (min-width: 1024px) {
   .app-container {
+    max-width: 1024px;
+    padding: 0 32px;
+  }
+}
+
+/* Desktop app-like container */
+@media (min-width: 1280px) {
+  .app-container {
     max-width: 480px;
+    padding: 0;
     box-shadow: 0 0 40px rgba(0,0,0,0.08);
+    border-radius: 24px;
+    margin: 24px auto;
+    min-height: calc(100vh - 48px);
   }
 }
 

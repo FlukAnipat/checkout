@@ -54,10 +54,12 @@ CREATE TABLE `users` (
   `is_paid`         TINYINT(1)    NOT NULL DEFAULT 0,
   `promo_code_used` VARCHAR(50)   DEFAULT NULL,
   `paid_at`         DATETIME      DEFAULT NULL,
+  `personal_promo_code` VARCHAR(20) DEFAULT NULL, -- Sales user's personal 10% promo code
   `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `unique_email` (`email`),
+  UNIQUE KEY `unique_personal_promo` (`personal_promo_code`),
   KEY `idx_role` (`role`),
   KEY `idx_is_paid` (`is_paid`),
   KEY `idx_referral_code` (`referral_code`)
