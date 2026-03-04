@@ -170,25 +170,42 @@ router.get('/me', authMiddleware, async (req, res) => {
  */
 router.put('/me', authMiddleware, async (req, res) => {
   try {
-    const { firstName, lastName, phone, countryCode } = req.body;
+    const { firstName, lastName, phone, countryCode, password, newPassword } = req.body;
 
-    if (!firstName || !lastName) {
-      return res.status(400).json({ error: 'First name and last name are required' });
+    // Handle password change
+    if (password && newPassword) {
+      const user = await getUserByEmail(req.user.email);
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'New password must be at least 6 characters' });
+      }
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await updateUser(req.user.email, { password: hashedPassword });
     }
 
-    await updateUser(req.user.email, {
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      phone: phone?.trim() || '',
-      countryCode: countryCode || '+95',
-    });
+    // Handle profile update
+    if (firstName || lastName || phone !== undefined || countryCode !== undefined) {
+      if (!firstName || !lastName) {
+        return res.status(400).json({ error: 'First name and last name are required' });
+      }
+
+      await updateUser(req.user.email, {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: phone?.trim() || '',
+        countryCode: countryCode || '+95',
+      });
+    }
 
     const updatedUser = await getUserByEmail(req.user.email);
     const { password: _, ...safeUser } = updatedUser;
 
     res.json({
       success: true,
-      message: 'Profile updated successfully',
+      message: password && newPassword ? 'Password changed successfully' : 'Profile updated successfully',
       user: {
         userId: safeUser.user_id,
         email: safeUser.email,

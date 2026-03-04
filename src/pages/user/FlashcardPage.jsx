@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { vocabAPI } from '../../services/api'
 import { ArrowLeft, RotateCcw, ChevronLeft, ChevronRight, Shuffle, BookmarkCheck, Bookmark, Check, X as XIcon, Volume2, Lock } from 'lucide-react'
@@ -25,8 +25,16 @@ export default function FlashcardPage() {
   const [isFlipped, setIsFlipped] = useState(false)
   const [loading, setLoading] = useState(true)
   const [savedWords, setSavedWords] = useState(new Set())
-  const [learned, setLearned] = useState(new Set())
+  const [passedWords, setPassedWords] = useState(new Set())
+  const [skippedWords, setSkippedWords] = useState(new Set())
   const { language, getMeaning, getExample, currentLang, tr } = useLanguage()
+
+  // Swipe state
+  const [swipeX, setSwipeX] = useState(0)
+  const [swipeAction, setSwipeAction] = useState(null) // 'pass' | 'skip' | null
+  const [isAnimating, setIsAnimating] = useState(false)
+  const touchStartRef = useRef({ x: 0, y: 0 })
+  const isDraggingRef = useRef(false)
 
   const FREE_WORD_LIMIT = 20
 
@@ -65,12 +73,12 @@ export default function FlashcardPage() {
   const currentWord = words[currentIndex]
   const progress = words.length > 0 ? ((currentIndex + 1) / words.length) * 100 : 0
 
-  const goNext = () => {
+  const goNext = useCallback(() => {
     if (currentIndex < words.length - 1) {
-      setCurrentIndex(currentIndex + 1)
+      setCurrentIndex(prev => prev + 1)
       setIsFlipped(false)
     }
-  }
+  }, [currentIndex, words.length])
 
   const goPrev = () => {
     if (currentIndex > 0) {
@@ -86,37 +94,77 @@ export default function FlashcardPage() {
     setIsFlipped(false)
   }
 
-  const markLearned = () => {
-    if (currentWord) {
-      const newLearned = new Set(learned)
-      newLearned.add(currentWord.id)
-      setLearned(newLearned)
+  const syncPassToServer = useCallback((newPassedWords) => {
+    if (!isGuest) {
+      const userId = user.user_id || user.userId
+      if (userId) {
+        const today = new Date()
+        const goalDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+        const completedCards = newPassedWords.size
+        vocabAPI.syncDailyGoal(userId, {
+          goalDate,
+          targetCards: 10,
+          completedCards,
+          isCompleted: completedCards >= 10,
+        }).catch(() => {})
+        vocabAPI.syncLearningSession(userId, {
+          sessionDate: goalDate,
+          hskLevel: levelNum,
+          learnedCards: 1,
+          minutesSpent: 0,
+        }).catch(() => {})
+      }
+    }
+  }, [isGuest, user, levelNum])
 
-      // Sync daily goal progress (like Flutter GoalProvider.incrementProgress)
+  const markPassed = useCallback(() => {
+    if (currentWord) {
+      const newPassed = new Set(passedWords)
+      newPassed.add(currentWord.id)
+      setPassedWords(newPassed)
+      // Remove from skipped if it was there
+      const newSkipped = new Set(skippedWords)
+      newSkipped.delete(currentWord.id)
+      setSkippedWords(newSkipped)
+      // Save to localStorage
+      const key = `sf_passed_${levelNum}`
+      localStorage.setItem(key, JSON.stringify([...newPassed]))
+      // Sync word status
       if (!isGuest) {
         const userId = user.user_id || user.userId
-        if (userId) {
-          const today = new Date()
-          const goalDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-          const completedCards = newLearned.size
-          vocabAPI.syncDailyGoal(userId, {
-            goalDate,
-            targetCards: 10,
-            completedCards,
-            isCompleted: completedCards >= 10,
-          }).catch(() => {})
+        if (userId) vocabAPI.updateWordStatus(userId, currentWord.id, 'learned').catch(() => {})
+      }
+      syncPassToServer(newPassed)
+    }
+    goNext()
+  }, [currentWord, passedWords, skippedWords, levelNum, isGuest, user, syncPassToServer, goNext])
 
-          vocabAPI.syncLearningSession(userId, {
-            sessionDate: goalDate,
-            hskLevel: levelNum,
-            learnedCards: 1,
-            minutesSpent: 0,
-          }).catch(() => {})
-        }
+  const markSkipped = useCallback(() => {
+    if (currentWord) {
+      const newSkipped = new Set(skippedWords)
+      newSkipped.add(currentWord.id)
+      setSkippedWords(newSkipped)
+      // Save to localStorage
+      const key = `sf_skipped_${levelNum}`
+      localStorage.setItem(key, JSON.stringify([...newSkipped]))
+      // Sync word status (skip does NOT count toward daily goal)
+      if (!isGuest) {
+        const userId = user.user_id || user.userId
+        if (userId) vocabAPI.updateWordStatus(userId, currentWord.id, 'skipped').catch(() => {})
       }
     }
     goNext()
-  }
+  }, [currentWord, skippedWords, levelNum, isGuest, user, goNext])
+
+  // Load saved pass/skip from localStorage
+  useEffect(() => {
+    try {
+      const p = JSON.parse(localStorage.getItem(`sf_passed_${levelNum}`) || '[]')
+      setPassedWords(new Set(p))
+      const s = JSON.parse(localStorage.getItem(`sf_skipped_${levelNum}`) || '[]')
+      setSkippedWords(new Set(s))
+    } catch {}
+  }, [levelNum])
 
   const toggleSave = () => {
     if (isGuest) { navigate('/login'); return }
@@ -128,6 +176,63 @@ export default function FlashcardPage() {
       newSaved.add(currentWord.id)
     }
     setSavedWords(newSaved)
+    // Sync bookmark
+    const userId = user.user_id || user.userId
+    if (userId) {
+      if (newSaved.has(currentWord.id)) {
+        vocabAPI.saveWord(userId, currentWord.id).catch(() => {})
+      } else {
+        vocabAPI.unsaveWord(userId, currentWord.id).catch(() => {})
+      }
+    }
+  }
+
+  // ─── Swipe / Drag handlers ───
+  const SWIPE_THRESHOLD = 80
+
+  const handlePointerDown = (e) => {
+    if (isAnimating) return
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY
+    touchStartRef.current = { x: clientX, y: clientY }
+    isDraggingRef.current = true
+  }
+
+  const handlePointerMove = (e) => {
+    if (!isDraggingRef.current || isAnimating) return
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX
+    const dx = clientX - touchStartRef.current.x
+    setSwipeX(dx)
+    if (dx > SWIPE_THRESHOLD) setSwipeAction('pass')
+    else if (dx < -SWIPE_THRESHOLD) setSwipeAction('skip')
+    else setSwipeAction(null)
+  }
+
+  const handlePointerUp = () => {
+    if (!isDraggingRef.current || isAnimating) return
+    isDraggingRef.current = false
+    if (swipeAction === 'pass') {
+      setIsAnimating(true)
+      setSwipeX(400)
+      setTimeout(() => {
+        markPassed()
+        setSwipeX(0)
+        setSwipeAction(null)
+        setIsAnimating(false)
+      }, 200)
+    } else if (swipeAction === 'skip') {
+      setIsAnimating(true)
+      setSwipeX(-400)
+      setTimeout(() => {
+        markSkipped()
+        setSwipeX(0)
+        setSwipeAction(null)
+        setIsAnimating(false)
+      }, 200)
+    } else {
+      setSwipeX(0)
+      setSwipeAction(null)
+    }
   }
 
   if (loading) {
@@ -185,11 +290,46 @@ export default function FlashcardPage() {
           />
         </div>
 
-        {/* Flashcard - centered */}
-        <div className="flex items-center justify-center mb-8">
-          <button
-            onClick={() => setIsFlipped(!isFlipped)}
-            className="w-full max-w-md aspect-[3/4] rounded-3xl shadow-lg border border-gray-100 bg-white flex flex-col items-center justify-center p-8 cursor-pointer transition-all duration-300 hover:shadow-xl active:scale-[0.98]"
+        {/* Swipe hint */}
+        <div className="flex items-center justify-center gap-6 mb-4 text-xs text-gray-400">
+          <span className="flex items-center gap-1"><XIcon size={12} className="text-red-400" /> ← {tr('skip')}</span>
+          <span className="flex items-center gap-1">{tr('pass')} → <Check size={12} className="text-green-500" /></span>
+        </div>
+
+        {/* Flashcard - swipeable */}
+        <div className="flex items-center justify-center mb-8 relative select-none">
+          {/* Swipe overlay indicators */}
+          {swipeAction === 'pass' && (
+            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+              <div className="px-8 py-4 rounded-2xl bg-green-500/90 text-white text-2xl font-black rotate-[-12deg] border-4 border-green-300 shadow-xl">
+                {tr('pass')} ✓
+              </div>
+            </div>
+          )}
+          {swipeAction === 'skip' && (
+            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+              <div className="px-8 py-4 rounded-2xl bg-red-500/90 text-white text-2xl font-black rotate-[12deg] border-4 border-red-300 shadow-xl">
+                {tr('skip')} ✗
+              </div>
+            </div>
+          )}
+          <div
+            onTouchStart={handlePointerDown}
+            onTouchMove={handlePointerMove}
+            onTouchEnd={handlePointerUp}
+            onMouseDown={handlePointerDown}
+            onMouseMove={handlePointerMove}
+            onMouseUp={handlePointerUp}
+            onMouseLeave={() => { if (isDraggingRef.current) handlePointerUp() }}
+            onClick={() => { if (Math.abs(swipeX) < 5) setIsFlipped(!isFlipped) }}
+            style={{
+              transform: `translateX(${swipeX}px) rotate(${swipeX * 0.05}deg)`,
+              transition: isAnimating ? 'transform 0.2s ease-out' : (isDraggingRef.current ? 'none' : 'transform 0.3s ease'),
+              opacity: isAnimating ? 0.5 : 1,
+            }}
+            className={`w-full max-w-md aspect-[3/4] rounded-3xl shadow-lg border-2 bg-white flex flex-col items-center justify-center p-8 cursor-grab active:cursor-grabbing transition-shadow
+              ${swipeAction === 'pass' ? 'border-green-400 shadow-green-100' : swipeAction === 'skip' ? 'border-red-400 shadow-red-100' : 'border-gray-100'}
+            `}
           >
             {!isFlipped ? (
               <div className="text-center animate-fade-in">
@@ -273,7 +413,7 @@ export default function FlashcardPage() {
                 <p className="text-xs text-gray-300 mt-4">{tr('clickToFlipBack')}</p>
               </div>
             )}
-          </button>
+          </div>
         </div>
 
         {/* Controls */}
@@ -287,13 +427,15 @@ export default function FlashcardPage() {
               {!isGuest && savedWords.has(currentWord.id) ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
             </button>
 
-            <button onClick={() => { setIsFlipped(false); goNext() }}
-              className="w-12 h-12 rounded-2xl bg-red-50 border-2 border-red-200 text-red-400 flex items-center justify-center hover:bg-red-100 transition-all cursor-pointer">
+            <button onClick={markSkipped}
+              className="w-12 h-12 rounded-2xl bg-red-50 border-2 border-red-200 text-red-400 flex items-center justify-center hover:bg-red-100 transition-all cursor-pointer"
+              title={tr('skip')}>
               <XIcon size={20} />
             </button>
 
-            <button onClick={markLearned}
-              className="w-12 h-12 rounded-2xl bg-green-50 border-2 border-green-200 text-green-500 flex items-center justify-center hover:bg-green-100 transition-all cursor-pointer">
+            <button onClick={markPassed}
+              className="w-12 h-12 rounded-2xl bg-green-50 border-2 border-green-200 text-green-500 flex items-center justify-center hover:bg-green-100 transition-all cursor-pointer"
+              title={tr('pass')}>
               <Check size={20} />
             </button>
           </div>
@@ -318,7 +460,9 @@ export default function FlashcardPage() {
 
           {/* Stats */}
           <div className="flex items-center justify-center gap-4 text-sm text-gray-400">
-            <span>{learned.size} {tr('learned')}</span>
+            <span className="text-green-500 font-medium">{passedWords.size} {tr('passed')}</span>
+            <span>·</span>
+            <span className="text-red-400 font-medium">{skippedWords.size} {tr('skipped')}</span>
             <span>·</span>
             <span>{savedWords.size} {tr('saved')}</span>
           </div>

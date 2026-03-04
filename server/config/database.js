@@ -351,7 +351,10 @@ export async function getUserSavedWords(userId) {
 
 export async function getUserWordStatuses(userId) {
   const [rows] = await pool.execute(
-    'SELECT vocab_id, status FROM user_word_status WHERE user_id = ?',
+    `SELECT uws.vocab_id, uws.status, v.hanzi, v.pinyin, v.meaning, v.meaning_en, v.meaning_my, v.hsk_level, v.example
+     FROM user_word_status uws
+     LEFT JOIN vocabulary v ON uws.vocab_id = v.vocab_id
+     WHERE uws.user_id = ?`,
     [userId]
   );
   return rows;

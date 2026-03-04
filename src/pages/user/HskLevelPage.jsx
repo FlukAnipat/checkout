@@ -25,6 +25,8 @@ export default function HskLevelPage() {
   const [expandedWord, setExpandedWord] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [savedWords, setSavedWords] = useState(new Set())
+  const [currentPage, setCurrentPage] = useState(1)
+  const WORDS_PER_PAGE = 20
   const { getMeaning, getExample, currentLang, language, tr } = useLanguage()
 
   const FREE_WORD_LIMIT = 20
@@ -101,6 +103,13 @@ export default function HskLevelPage() {
     )
   })
 
+  // Reset page when search changes
+  useEffect(() => { setCurrentPage(1) }, [searchQuery])
+
+  const displayWords = isLimited ? filteredWords.slice(0, FREE_WORD_LIMIT) : filteredWords
+  const totalPages = Math.ceil(displayWords.length / WORDS_PER_PAGE)
+  const paginatedWords = displayWords.slice((currentPage - 1) * WORDS_PER_PAGE, currentPage * WORDS_PER_PAGE)
+
   if (loading) {
     return (
       <WebLayout>
@@ -173,13 +182,23 @@ export default function HskLevelPage() {
           </div>
         )}
 
+        {/* Page info */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-gray-500">
+              {tr('page')} {currentPage} / {totalPages} ({displayWords.length} {tr('words')})
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredWords.length === 0 ? (
+          {paginatedWords.length === 0 ? (
             <div className="col-span-full bg-white rounded-2xl p-8 shadow-sm text-center">
               <p className="text-gray-400 text-sm">{tr('noWordsFound')}</p>
             </div>
           ) : (
-            (isLimited ? filteredWords.slice(0, FREE_WORD_LIMIT) : filteredWords).map((word, index) => {
+            paginatedWords.map((word, index) => {
+              const globalIndex = (currentPage - 1) * WORDS_PER_PAGE + index
               const isExpanded = expandedWord === word.id
               const isSaved = savedWords.has(word.id)
 
@@ -189,7 +208,7 @@ export default function HskLevelPage() {
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className={`w-8 h-8 rounded-lg ${colors.light} flex items-center justify-center flex-shrink-0`}>
-                        <span className={`text-xs font-bold ${colors.text}`}>{index + 1}</span>
+                        <span className={`text-xs font-bold ${colors.text}`}>{globalIndex + 1}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <button onClick={() => speakChinese(word.hanzi)}
@@ -266,6 +285,47 @@ export default function HskLevelPage() {
             })
           )}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-6">
+            <button
+              onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+              disabled={currentPage === 1}
+              className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm font-medium text-gray-600 disabled:opacity-30 hover:bg-gray-50 transition-colors cursor-pointer disabled:cursor-not-allowed">
+              {tr('previous')}
+            </button>
+            {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+              let page
+              if (totalPages <= 7) {
+                page = i + 1
+              } else if (currentPage <= 4) {
+                page = i + 1
+              } else if (currentPage >= totalPages - 3) {
+                page = totalPages - 6 + i
+              } else {
+                page = currentPage - 3 + i
+              }
+              return (
+                <button key={page}
+                  onClick={() => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                  className={`w-10 h-10 rounded-xl text-sm font-bold transition-colors cursor-pointer
+                    ${currentPage === page
+                      ? `bg-gradient-to-r ${colors.gradient} text-white shadow-sm`
+                      : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}>
+                  {page}
+                </button>
+              )
+            })}
+            <button
+              onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm font-medium text-gray-600 disabled:opacity-30 hover:bg-gray-50 transition-colors cursor-pointer disabled:cursor-not-allowed">
+              {tr('next')}
+            </button>
+          </div>
+        )}
 
         {/* Upgrade CTA after limited words */}
         {isLimited && filteredWords.length > FREE_WORD_LIMIT && (

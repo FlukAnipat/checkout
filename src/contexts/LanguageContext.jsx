@@ -172,6 +172,22 @@ const APP_STRINGS = {
   searchVocabulary: { en: 'Search vocabulary (hanzi, pinyin, or meaning)...', my: 'စကားလုံးရှာ (hanzi, pinyin, အဓိပ္ပာယ်)...' },
   resultsFound: { en: 'results found', my: 'ရလဒ်တွေ့သည်' },
   noResultsFor: { en: 'No results found for', my: 'ရလဒ်မတွေ့ပါ' },
+  // Swipe / Pass / Skip
+  pass: { en: 'Pass', my: 'ဖြတ်' },
+  skip: { en: 'Skip', my: 'ကျော်' },
+  passed: { en: 'Passed', my: 'ဖြတ်ပြီး' },
+  skipped: { en: 'Skipped', my: 'ကျော်ပြီး' },
+  swipeRightToPass: { en: 'Swipe right to pass', my: 'ဖြတ်ရန် ညာသို့ဆွဲ' },
+  swipeLeftToSkip: { en: 'Swipe left to skip', my: 'ကျော်ရန် ဘယ်သို့ဆွဲ' },
+  passedWords: { en: 'Passed', my: 'ဖြတ်ပြီး' },
+  skippedWords: { en: 'Skipped', my: 'ကျော်ပြီး' },
+  noPassedWords: { en: 'No passed words yet', my: 'ဖြတ်ပြီးစကားလုံး မရှိသေးပါ' },
+  noSkippedWords: { en: 'No skipped words yet', my: 'ကျော်ပြီးစကားလုံး မရှိသေးပါ' },
+  reviewSkipped: { en: 'Review Skipped', my: 'ကျော်ထားသည်များ ပြန်လေ့လာ' },
+  // Pagination
+  page: { en: 'Page', my: 'စာမျက်နှာ' },
+  // Search details
+  hskLevelLabel: { en: 'HSK Level', my: 'HSK အဆင့်' },
 }
 
 // Language options matching Flutter app

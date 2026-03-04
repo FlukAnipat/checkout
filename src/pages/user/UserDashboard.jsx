@@ -184,40 +184,50 @@ export default function UserDashboard() {
                   <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : searchResults.length === 0 ? (
-                <div className="py-8 text-center text-sm text-gray-400">No results found for "{searchQuery}"</div>
+                <div className="py-8 text-center text-sm text-gray-400">{tr('noResultsFor')} "{searchQuery}"</div>
               ) : (
                 <>
                   <div className="px-4 py-3 border-b border-gray-100 text-xs font-medium text-gray-400">
-                    {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
+                    {searchResults.length} {tr('resultsFound')}
                   </div>
                   {searchResults.map((word) => {
                     const c = HSK_COLORS[word.hskLevel] || HSK_COLORS[1]
+                    const levelLabel = HSK_LABELS[word.hskLevel] || ''
                     return (
                       <div key={word.id}
                         className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
                         onClick={() => { setSearchQuery(''); setSearchResults([]); navigate(`/hsk/${word.hskLevel}`) }}>
                         <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${c.light} ${c.text}`}>
+                          <div className="flex-shrink-0 flex flex-col items-center gap-1">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold ${c.light} ${c.text}`}>
                               HSK {word.hskLevel}
                             </span>
+                            <span className="text-[9px] text-gray-400">{levelLabel}</span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="text-lg font-bold text-gray-900">{word.hanzi}</span>
-                              <span className="text-sm text-gray-400">{word.pinyin}</span>
+                              <span className="text-xl font-bold text-gray-900">{word.hanzi}</span>
+                              <span className="text-sm text-gray-400 font-medium">{word.pinyin}</span>
                               <button
                                 onClick={(e) => { e.stopPropagation(); speakChinese(word.hanzi) }}
-                                className="w-6 h-6 rounded-md bg-blue-50 flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer flex-shrink-0">
-                                <Volume2 size={12} className="text-blue-500" />
+                                className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer flex-shrink-0">
+                                <Volume2 size={13} className="text-blue-500" />
                               </button>
                             </div>
-                            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
-                              <span className="text-xs text-gray-600 whitespace-pre-line">{getMeaning(word)}</span>
-                            </div>
-                            {word.example && (
-                              <p className="text-xs text-gray-400 mt-1 truncate">Example: {word.example}</p>
-                            )}
+                            <p className="text-sm text-gray-700 mt-1 whitespace-pre-line">{getMeaning(word)}</p>
+                            {word.example && (() => {
+                              const lines = word.example.split('\n').filter(l => l.trim())
+                              const firstChinese = lines.find(l => /[\u4e00-\u9fff]/.test(l))
+                              const firstTranslation = lines.find(l => /^[a-zA-Z]/.test(l) && !/[\u4e00-\u9fff]/.test(l))
+                              if (!firstChinese) return null
+                              return (
+                                <div className="mt-2 p-2 rounded-lg bg-gray-50 border border-gray-100">
+                                  <p className="text-[10px] font-bold text-gray-400 mb-1">{tr('example')}</p>
+                                  <p className="text-xs text-gray-700 font-medium">{firstChinese.replace(/^\d+\.\s*/, '').trim()}</p>
+                                  {firstTranslation && <p className="text-xs text-gray-500 mt-0.5">{firstTranslation.trim()}</p>}
+                                </div>
+                              )
+                            })()}
                           </div>
                         </div>
                       </div>
