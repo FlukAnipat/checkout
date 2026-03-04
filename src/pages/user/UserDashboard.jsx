@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { vocabAPI } from '../../services/api'
-import { Search, Crown, Lock, BookOpen, Play, Download, X, Sparkles, Volume2 } from 'lucide-react'
+import { Search, Crown, Lock, BookOpen, Play, Download, X, Sparkles, Volume2, Check } from 'lucide-react'
 import WebLayout from '../../components/WebLayout'
 import { useLanguage } from '../../contexts/LanguageContext'
 
@@ -27,6 +27,7 @@ export default function UserDashboard() {
   const [searchResults, setSearchResults] = useState([])
   const [searching, setSearching] = useState(false)
   const [searchTimeout, setSearchTimeoutId] = useState(null)
+  const [todayGoal, setTodayGoal] = useState({ completedCards: 0, targetCards: 10, isCompleted: false })
 
   const token = localStorage.getItem('sf_token')
   const isGuest = !token
@@ -35,9 +36,29 @@ export default function UserDashboard() {
     if (!isGuest) {
       const userData = JSON.parse(localStorage.getItem('sf_user') || '{}')
       setUser(userData)
+      loadTodayGoal(userData.user_id || userData.userId)
     }
     loadLevels()
   }, [])
+
+  const loadTodayGoal = async (userId) => {
+    if (!userId) return
+    try {
+      const today = new Date()
+      const goalDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+      const res = await vocabAPI.getDailyGoals(userId, goalDate, goalDate)
+      const goal = (res.data.goals || [])[0]
+      if (goal) {
+        setTodayGoal({
+          completedCards: goal.completed_cards || goal.completedCards || 0,
+          targetCards: goal.target_cards || goal.targetCards || 10,
+          isCompleted: goal.is_completed || goal.isCompleted || false,
+        })
+      }
+    } catch (err) {
+      console.error('Failed to load today goal:', err)
+    }
+  }
 
   const loadLevels = async () => {
     try {
@@ -135,6 +156,34 @@ export default function UserDashboard() {
 
         {/* Stats Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          {/* Today Goal */}
+          <div className={`rounded-2xl p-4 shadow-sm border-2 ${todayGoal.isCompleted ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200' : 'bg-white border-gray-100'}`}>
+            <div className="flex items-center justify-between mb-2">
+              <div className={`text-2xl font-black ${todayGoal.isCompleted ? 'text-green-600' : 'text-primary-500'}`}>
+                {todayGoal.completedCards}/{todayGoal.targetCards}
+              </div>
+              {todayGoal.isCompleted && (
+                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                  <Check size={14} className="text-white" />
+                </div>
+              )}
+            </div>
+            <div className="text-sm text-gray-500 font-medium">{tr('todayGoal')}</div>
+            {/* Progress bar */}
+            <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${todayGoal.isCompleted ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-primary-500 to-primary-600'}`}
+                style={{ width: `${Math.min((todayGoal.completedCards / todayGoal.targetCards) * 100, 100)}%` }}
+              />
+            </div>
+            {!isGuest && !todayGoal.isCompleted && (
+              <button
+                onClick={() => navigate('/flashcard/1')}
+                className="mt-2 w-full py-1.5 rounded-lg bg-primary-50 text-primary-600 text-xs font-bold hover:bg-primary-100 transition-colors cursor-pointer">
+                {tr('startLearning')}
+              </button>
+            )}
+          </div>
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <div className="text-2xl font-black text-primary-500">
               {levels.reduce((sum, l) => sum + (l.word_count || 0), 0).toLocaleString()}
@@ -150,10 +199,6 @@ export default function UserDashboard() {
               {isGuest ? 1 : (isPaid ? 6 : 1)}
             </div>
             <div className="text-sm text-gray-500 font-medium mt-1">{tr('levelsUnlocked')}</div>
-          </div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="text-2xl font-black text-purple-500">3</div>
-            <div className="text-sm text-gray-500 font-medium mt-1">{tr('languages')}</div>
           </div>
         </div>
 
