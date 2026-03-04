@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Play, Crown, BookOpen, Star, Users, Download, ChevronRight, Sparkles, Zap, Award, LogOut, User } from 'lucide-react'
+import { ArrowRight, Play, Crown, BookOpen, Star, Users, Download, ChevronRight, Sparkles, Zap, Award, LogOut, User, Lock } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 
 export default function GuestPage() {
@@ -86,22 +86,22 @@ export default function GuestPage() {
         {/* Hero Content */}
         <div className="relative px-6 py-16 text-center">
           <div className="max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-200 mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 mb-8">
               <Sparkles size={16} className="text-amber-500" />
-              <span className="text-sm font-bold text-amber-700">Learn Chinese HSK 1-6</span>
+              <span className="text-sm font-bold text-amber-700">Learn Chinese HSK 1-8</span>
             </div>
             
-            <h1 className="text-5xl md:text-6xl font-black text-gray-900 mb-6 leading-tight">
+            <h1 className="text-5xl md:text-7xl font-black text-gray-900 mb-8 leading-tight">
               Master Chinese
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600">
                 HSK Vocabulary
               </span>
             </h1>
             
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
               The most effective way to learn Chinese vocabulary with flashcards, 
               interactive study modes, and progress tracking. Join thousands of students 
-              mastering HSK levels 1-6.
+              mastering HSK levels 1-8 with our comprehensive learning system.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
@@ -120,11 +120,11 @@ export default function GuestPage() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-8 max-w-lg mx-auto">
               <div className="text-center">
-                <div className="text-3xl font-black text-gray-900">5K+</div>
+                <div className="text-3xl font-black text-gray-900">10K+</div>
                 <div className="text-sm text-gray-500">Vocabulary Words</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-black text-gray-900">6</div>
+                <div className="text-3xl font-black text-gray-900">8</div>
                 <div className="text-sm text-gray-500">HSK Levels</div>
               </div>
               <div className="text-center">
@@ -140,44 +140,44 @@ export default function GuestPage() {
       <div className="px-6 py-20 bg-white">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-black text-gray-900 mb-4">
+            <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-6">
               Everything You Need to Master HSK
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Comprehensive learning tools designed for effective vocabulary acquisition
+            <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
+              Comprehensive learning tools designed for effective vocabulary acquisition across all 8 HSK levels
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="p-8 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200">
-              <div className="w-14 h-14 rounded-xl bg-blue-500 flex items-center justify-center mb-6">
-                <BookOpen size={28} className="text-white" />
+            <div className="p-8 rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200 hover:shadow-lg transition-shadow">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center mb-6 shadow-lg">
+                <BookOpen size={32} className="text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Structured Learning</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Follow the official HSK curriculum with 5,000+ vocabulary words 
-                organized by difficulty level from HSK 1 to HSK 6.
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Structured Learning</h3>
+              <p className="text-gray-600 leading-relaxed text-lg">
+                Follow the official HSK curriculum with 10,000+ vocabulary words 
+                organized by difficulty level from HSK 1 to HSK 8.
               </p>
             </div>
 
-            <div className="p-8 rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200">
-              <div className="w-14 h-14 rounded-xl bg-purple-500 flex items-center justify-center mb-6">
-                <Zap size={28} className="text-white" />
+            <div className="p-8 rounded-3xl bg-gradient-to-br from-purple-50 to-pink-100 border border-purple-200 hover:shadow-lg transition-shadow">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mb-6 shadow-lg">
+                <Zap size={32} className="text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Smart Flashcards</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Interactive flashcards with spaced repetition, audio pronunciation, 
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Smart Flashcards</h3>
+              <p className="text-gray-600 leading-relaxed text-lg">
+                Interactive flashcards with swipe gestures, spaced repetition, audio pronunciation, 
                 and multi-language support (English, Myanmar, Thai).
               </p>
             </div>
 
-            <div className="p-8 rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200">
-              <div className="w-14 h-14 rounded-xl bg-amber-500 flex items-center justify-center mb-6">
-                <Award size={28} className="text-white" />
+            <div className="p-8 rounded-3xl bg-gradient-to-br from-amber-50 to-orange-100 border border-amber-200 hover:shadow-lg transition-shadow">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center mb-6 shadow-lg">
+                <Award size={32} className="text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Track Progress</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Monitor your learning journey with detailed statistics, 
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Track Progress</h3>
+              <p className="text-gray-600 leading-relaxed text-lg">
+                Monitor your learning journey with daily goals, detailed statistics, 
                 achievements, and personalized study recommendations.
               </p>
             </div>
@@ -197,23 +197,32 @@ export default function GuestPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
             {[
               { level: 1, color: 'from-red-500 to-red-600', words: 150, label: 'Beginner' },
               { level: 2, color: 'from-orange-500 to-orange-600', words: 150, label: 'Elementary' },
-              { level: 3, color: 'from-yellow-500 to-yellow-600', words: 300, label: 'Pre-Intermediate' },
-              { level: 4, color: 'from-green-500 to-green-600', words: 600, label: 'Intermediate' },
+              { level: 3, color: 'from-yellow-500 to-yellow-600', words: 300, label: 'Intermediate' },
+              { level: 4, color: 'from-green-500 to-green-600', words: 600, label: 'Upper-Intermediate' },
               { level: 5, color: 'from-blue-500 to-blue-600', words: 1300, label: 'Advanced' },
               { level: 6, color: 'from-purple-500 to-purple-600', words: 2500, label: 'Proficient' },
+              { level: 7, color: 'from-gray-700 to-gray-800', words: 3500, label: 'Master', locked: true },
+              { level: 8, color: 'from-gray-900 to-black', words: 5000, label: 'Expert', locked: true },
             ].map((hsk) => (
-              <div key={hsk.level} className="group cursor-pointer" onClick={handleGetStarted}>
-                <div className={`relative rounded-2xl bg-gradient-to-br ${hsk.color} p-6 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-1`}>
-                  <div className="text-3xl font-black mb-2">HSK {hsk.level}</div>
-                  <div className="text-sm opacity-90 mb-3">{hsk.words} words</div>
+              <div key={hsk.level} className={`group ${hsk.locked ? 'cursor-not-allowed' : 'cursor-pointer'}`} onClick={!hsk.locked ? handleGetStarted : undefined}>
+                <div className={`relative rounded-2xl bg-gradient-to-br ${hsk.color} p-4 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 ${hsk.locked ? 'opacity-60' : ''}`}>
+                  <div className="text-2xl font-black mb-1">HSK {hsk.level}</div>
+                  <div className="text-xs opacity-90 mb-2">{hsk.words} words</div>
                   <div className="text-xs opacity-75">{hsk.label}</div>
-                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ChevronRight size={16} />
-                  </div>
+                  {hsk.locked && (
+                    <div className="absolute top-2 right-2">
+                      <Lock size={12} className="text-white/70" />
+                    </div>
+                  )}
+                  {!hsk.locked && (
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ChevronRight size={14} />
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

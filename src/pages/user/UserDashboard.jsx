@@ -120,6 +120,10 @@ export default function UserDashboard() {
   }
 
   const handleLevelClick = (level) => {
+    // HSK 7-8 are locked for new version - prevent navigation
+    if (level > 6) {
+      return
+    }
     if (isGuest && level > 1) {
       navigate('/login')
       return
