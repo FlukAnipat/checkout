@@ -12,10 +12,21 @@ const HSK_COLORS = {
   4: { bg: 'bg-green-500', light: 'bg-green-50', text: 'text-green-600', border: 'border-green-200', gradient: 'from-green-500 to-green-600' },
   5: { bg: 'bg-blue-500', light: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200', gradient: 'from-blue-500 to-blue-600' },
   6: { bg: 'bg-purple-500', light: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-200', gradient: 'from-purple-500 to-purple-600' },
+  7: { bg: 'bg-gray-700', light: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-200', gradient: 'from-gray-700 to-gray-800' },
+  8: { bg: 'bg-gray-900', light: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-200', gradient: 'from-gray-900 to-black' },
 }
 
-const HSK_LABELS = { 1: 'Beginner', 2: 'Elementary', 3: 'Intermediate', 4: 'Upper-Intermediate', 5: 'Advanced', 6: 'Proficient' }
-const HSK_WORD_COUNTS = { 1: 150, 2: 150, 3: 300, 4: 600, 5: 1300, 6: 2500 }
+const HSK_LABELS = { 
+  1: 'Beginner', 
+  2: 'Elementary', 
+  3: 'Intermediate', 
+  4: 'Upper-Intermediate', 
+  5: 'Advanced', 
+  6: 'Proficient',
+  7: 'Master',
+  8: 'Expert'
+}
+const HSK_WORD_COUNTS = { 1: 150, 2: 150, 3: 300, 4: 600, 5: 1300, 6: 2500, 7: 3500, 8: 5000 }
 
 export default function UserDashboard() {
   const navigate = useNavigate()
@@ -191,7 +202,7 @@ export default function UserDashboard() {
             <div className="text-sm text-gray-500 font-medium mt-1">{tr('totalWords')}</div>
           </div>
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="text-2xl font-black text-green-500">6</div>
+            <div className="text-2xl font-black text-green-500">8</div>
             <div className="text-sm text-gray-500 font-medium mt-1">{tr('hskLevels')}</div>
           </div>
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
@@ -296,12 +307,13 @@ export default function UserDashboard() {
         </div>
 
         {/* HSK Level Cards - Responsive Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          {[1, 2, 3, 4, 5, 6].map(level => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(level => {
             const colors = HSK_COLORS[level]
             const levelData = levels.find(l => l.hsk_level === level)
             const wordCount = levelData?.word_count || HSK_WORD_COUNTS[level]
-            const isLocked = isGuest ? level > 1 : (!isPaid && level > 1)
+            // HSK 7-8 are always locked (new version feature)
+            const isLocked = isGuest ? level > 1 : (!isPaid && level > 1) || level > 6
             const label = HSK_LABELS[level]
 
             if (searchQuery && !`HSK ${level} ${label}`.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -356,7 +368,7 @@ export default function UserDashboard() {
                         }
                       `}>
                       <BookOpen size={16} />
-                      {isLocked ? (isGuest ? tr('signUp') : tr('unlockAll')) : tr('study')}
+                      {isLocked ? (level > 6 ? 'New Version' : (isGuest ? tr('signUp') : tr('unlockAll'))) : tr('study')}
                     </button>
                     {!isLocked && (
                       <button onClick={() => navigate(`/flashcard/${level}`)}
@@ -382,7 +394,7 @@ export default function UserDashboard() {
               <div className="flex-1">
                 <h3 className="text-xl font-bold">{tr('unlockAllHskLevels')}</h3>
                 <p className="text-white/85 mt-1">
-                  Get full access to 5,000+ vocabulary words across all 6 HSK levels with premium features.
+                  Get full access to 10,000+ vocabulary words across all 8 HSK levels with premium features.
                 </p>
               </div>
               <button onClick={() => isGuest ? navigate('/register') : navigate('/payment')}
