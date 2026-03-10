@@ -88,7 +88,7 @@ export default function GuestPage() {
           <div className="max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 mb-8">
               <Sparkles size={16} className="text-amber-500" />
-              <span className="text-sm font-bold text-amber-700">Learn Chinese HSK 1-8</span>
+              <span className="text-sm font-bold text-amber-700">Learn Chinese HSK 1-9</span>
             </div>
             
             <h1 className="text-5xl md:text-7xl font-black text-gray-900 mb-8 leading-tight">
@@ -101,7 +101,7 @@ export default function GuestPage() {
             <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
               The most effective way to learn Chinese vocabulary with flashcards, 
               interactive study modes, and progress tracking. Join thousands of students 
-              mastering HSK levels 1-8 with our comprehensive learning system.
+              mastering HSK levels 1-9 with our comprehensive learning system.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
@@ -120,11 +120,11 @@ export default function GuestPage() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-8 max-w-lg mx-auto">
               <div className="text-center">
-                <div className="text-3xl font-black text-gray-900">10K+</div>
+                <div className="text-3xl font-black text-gray-900">20K+</div>
                 <div className="text-sm text-gray-500">Vocabulary Words</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-black text-gray-900">8</div>
+                <div className="text-3xl font-black text-gray-900">7</div>
                 <div className="text-sm text-gray-500">HSK Levels</div>
               </div>
               <div className="text-center">
@@ -144,7 +144,7 @@ export default function GuestPage() {
               Everything You Need to Master HSK
             </h2>
             <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
-              Comprehensive learning tools designed for effective vocabulary acquisition across all 8 HSK levels
+              Comprehensive learning tools designed for effective vocabulary acquisition across all 7 HSK levels (1-9)
             </p>
           </div>
 
@@ -155,8 +155,8 @@ export default function GuestPage() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Structured Learning</h3>
               <p className="text-gray-600 leading-relaxed text-lg">
-                Follow the official HSK curriculum with 10,000+ vocabulary words 
-                organized by difficulty level from HSK 1 to HSK 8.
+                Follow the official HSK curriculum with 20,000+ vocabulary words 
+                organized by difficulty level from HSK 1 to HSK 9.
               </p>
             </div>
 
@@ -197,7 +197,7 @@ export default function GuestPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
             {[
               { level: 1, color: 'from-red-500 to-red-600', words: 150, label: 'Beginner' },
               { level: 2, color: 'from-orange-500 to-orange-600', words: 150, label: 'Elementary' },
@@ -205,8 +205,7 @@ export default function GuestPage() {
               { level: 4, color: 'from-green-500 to-green-600', words: 600, label: 'Upper-Intermediate' },
               { level: 5, color: 'from-blue-500 to-blue-600', words: 1300, label: 'Advanced' },
               { level: 6, color: 'from-purple-500 to-purple-600', words: 2500, label: 'Proficient' },
-              { level: 7, color: 'from-gray-700 to-gray-800', words: 3500, label: 'Master', locked: true },
-              { level: 8, color: 'from-gray-900 to-black', words: 5000, label: 'Expert', locked: true },
+              { level: 7, color: 'from-gray-700 to-gray-800', words: 12000, label: 'Master (7-9)', locked: true },
             ].map((hsk) => (
               <div key={hsk.level} className={`group ${hsk.locked ? 'cursor-not-allowed' : 'cursor-pointer'}`} onClick={!hsk.locked ? handleGetStarted : undefined}>
                 <div className={`relative rounded-2xl bg-gradient-to-br ${hsk.color} p-4 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 ${hsk.locked ? 'opacity-60' : ''}`}>
